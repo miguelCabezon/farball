@@ -1,5 +1,7 @@
 // js/ui.js — control de pantallas
 import { CRESTS, sampleForRole, jugadoresPool } from './data.js';
+import { RIVALS, createLeague, updateTable, standingsSorted } from './data.js';
+import { simularPartido, DEFAULT_EVENTS } from './engine.js';
 // ===== Helpers que quizás no tengas aún =====
 function formatCoins(n){ return `${n} 💰`; }
 function getPlayerById(id){ return jugadoresPool.find(j => j.id === id); }
@@ -360,6 +362,23 @@ function renderDraftDelantero(){
 
 // ----------------- Resumen del club tras el draft --------------
 function renderClubSummary(){
+  if (!career.league) {
+  career.league = createLeague(career.teamName, RIVALS);
+  }
+  function tableHTML(){
+  const rows = standingsSorted(career.league).map(t => `
+    <tr>
+      <td>${t.name}</td><td>${t.pj}</td><td>${t.pg}</td><td>${t.pe}</td><td>${t.pp}</td>
+      <td>${t.gf}</td><td>${t.gc}</td><td>${t.gf - t.gc}</td><td><strong>${t.pts}</strong></td>
+    </tr>`).join("");
+  return `
+    <table style="border-collapse:collapse; width:100%; max-width:760px;">
+      <thead>
+        <tr><th>Equipo</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>PTS</th></tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
   const root = document.getElementById("screen-club");
   if(!root) throw new Error("Falta #screen-club");
 
@@ -386,6 +405,43 @@ function renderClubSummary(){
   }
 
   root.innerHTML = `
+  <hr style="margin:16px 0;">
+  <h3>Clasificación (Jornada ${career.league.jornada - 1})</h3>
+  <div id="tabla-clasificacion">${tableHTML()}</div>
+  <div style="margin-top:12px;">
+    <button id="btn-jugar">Jugar jornada ${career.league.jornada} ▶️</button>
+  </div>
+root.querySelector("#btn-jugar").onclick = ()=>{
+  const j = career.league.jornada;
+  const fixture = career.league.fixtures[j-1];
+  if(!fixture){ alert("¡Liga terminada!"); return; }
+
+  // Construir equipoT desde la plantilla elegida
+  const equipoT = {
+    nombre: career.teamName, moral: 7, local: true,
+    jugadores: career.plantilla.map(getPlayerById).filter(Boolean)
+  };
+  const equipoR = { nombre: fixture.away, moral: 5, local: false, jugadores: sampleRivalSquad() };
+
+  const res = simularPartido(equipoT, equipoR, { N: 12, eventsDeck: DEFAULT_EVENTS });
+  updateTable(career.league, fixture.home, fixture.away, res.score);
+  career.league.jornada++;
+
+  alert(`${fixture.home} ${res.score.home} - ${res.score.away} ${fixture.away}`);
+
+  // refrescar tabla
+  document.getElementById("tabla-clasificacion").innerHTML = tableHTML();
+  // refrescar cabecera con jornada (re-render completo si prefieres)
+};
+function sampleRivalSquad(){
+  // Saca 1 GK, 2 DEF, 2 MID, 1 ATK aleatorios del pool (simple)
+  const gk  = sampleForRole("GK", 1);
+  const dfs = sampleForRole("DEF", 2);
+  const mfs = sampleForRole("MID", 2);
+  const atk = sampleForRole("ATK", 1);
+  return [...gk, ...dfs, ...mfs, ...atk];
+}
+  
     <h2>${career.teamName} — Plantilla final</h2>
     <p><strong>Presupuesto restante:</strong> ${formatCoins(career.coins)}</p>
     ${listRole("GK", byRole.GK)}
@@ -410,6 +466,7 @@ function renderClubSummary(){
     renderDraft(); // vuelve a la ronda de porteros
   };
 }
+
 
 
 
