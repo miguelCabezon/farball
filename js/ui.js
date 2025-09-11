@@ -192,21 +192,9 @@ function renderSetup(){
   };
 }
 
-// -------- Pantalla DRAFT (placeholder) --------
-function renderDraft(){
-  const root = document.getElementById("screen-draft");
-  root.innerHTML = `
-    <h2>Draft de jugadores</h2>
-    <p>(Aquí montaremos la elección de plantilla…)</p>
-    <button id="btn-back">⬅️ Volver</button>
-  `;
-  root.querySelector("#btn-back").onclick = ()=>{
-    showScreen("screen-setup");
-    renderSetup();
-  };
-}
 
 // -------- Init --------
 showScreen("screen-setup");
 renderSetup();
+
 
