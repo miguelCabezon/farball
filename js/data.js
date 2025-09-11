@@ -27,10 +27,10 @@ export const RIVALS = [
 // Cambia lo que quieras: nombres, stats, etc. El motor usa "stats" y "rol".
 export const jugadoresPool = [
   // ---- PORTEROS (GK) x4 ----
-  { id:"gk1", rol:"GK", tier:2, salario:3, nombre:"Paco 'Botellines'", blurb:"Reflejos decentes, madrugar le mata.", quirks:["resacoso"], stats:{ tecnica:3, velocidad:2, fuerza:3, resaca:6, carisma:4, reflejos:6 } },
-  { id:"gk2", rol:"GK", tier:1, salario:2, nombre:"Rafa 'Manoplas'", blurb:"Agarra poco, despeja todo.", quirks:["puños"], stats:{ tecnica:2, velocidad:3, fuerza:4, resaca:3, carisma:3, reflejos:5 } },
-  { id:"gk3", rol:"GK", tier:3, salario:4, nombre:"Tino 'Gato'", blurb:"Salta como si tuviera muelles.", quirks:["felino"], stats:{ tecnica:4, velocidad:4, fuerza:4, resaca:2, carisma:5, reflejos:8 } },
-  { id:"gk4", rol:"GK", tier:2, salario:3, nombre:"Suso 'Termo'", blurb:"Siempre caliente… o se enfría rápido.", quirks:["rachas"], stats:{ tecnica:3, velocidad:3, fuerza:4, resaca:4, carisma:4, reflejos:6 } },
+  { id:"gk1", rol:"GK", tier:2, salario:3, nombre:"Paco 'Botellines'", blurb:"No te garantiza que se presente sobrio a los partídos, el rey de la fiesta del pueblo", quirks:["resacoso"], stats:{ tecnica:3, velocidad:2, fuerza:3, resaca:6, carisma:4, reflejos:6 } },
+  { id:"gk2", rol:"GK", tier:1, salario:2, nombre:"Rafa 'El manos'", blurb:"Perdio una mano en una rellerta con el Jonathan, tiene buenas intenciones", quirks:["puños"], stats:{ tecnica:2, velocidad:3, fuerza:4, resaca:3, carisma:3, reflejos:5 } },
+  { id:"gk3", rol:"GK", tier:3, salario:4, nombre:"Tino 'Gato'", blurb:"Una vez jugó en tercera división, es verdad que el equipo no era consciente", quirks:["felino"], stats:{ tecnica:4, velocidad:4, fuerza:4, resaca:2, carisma:5, reflejos:8 } },
+  { id:"gk4", rol:"GK", tier:2, salario:3, nombre:"Suso 'Termo'", blurb:"Está con la condicional, los días que no tenga que ir a comisaria estará disponible", quirks:["rachas"], stats:{ tecnica:3, velocidad:3, fuerza:4, resaca:4, carisma:4, reflejos:6 } },
 
   // ---- DEFENSAS (DEF) x8 ----
   { id:"def1", rol:"DEF", tier:2, salario:2, nombre:"Manolo 'Condicional'", blurb:"Corte limpio salvo días de firma.", quirks:["condicional"], stats:{ tecnica:2, velocidad:4, fuerza:7, resaca:3, carisma:2 } },
@@ -73,3 +73,4 @@ export function sampleForRole(role, n = 4) {
   const arr = pool.sort(() => Math.random() - 0.5);
   return arr.slice(0, Math.min(n, arr.length));
 }
+
