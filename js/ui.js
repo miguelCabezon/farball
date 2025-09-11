@@ -414,78 +414,88 @@ function renderClubSummary(){
   `;
 
   // Handlers
- const btnRehacer = root.querySelector("#btn-rehacer");
-if (btnRehacer) {
-  btnRehacer.onclick = ()=>{
-    career.plantilla = [];
-    career.coins = 12;
-    career.league = null;
-    showScreen("screen-draft");
-    renderDraft();
+  const btnRehacer = root.querySelector("#btn-rehacer");
+  if (btnRehacer) {
+    btnRehacer.onclick = ()=>{
+      career.plantilla = [];
+      career.coins = 12;
+      career.league = null;
+      showScreen("screen-draft");
+      renderDraft();
+    };
+  }
+
+  const btnJugar = root.querySelector("#btn-jugar-jornada");
+  if (!btnJugar) {
+    console.error("[UI] No encuentro #btn-jugar-jornada. Revisa el innerHTML o el id del botón.");
+    return; // evita el error de 'null.onclick'
+  }
+
+  btnJugar.onclick = ()=>{
+    const matches = getRoundMatches(career.league);
+    const my = matches.find(m => m.home === career.teamName || m.away === career.teamName);
+    if(!my){ alert("¡Liga terminada!"); return; }
+
+    const myRoster = career.plantilla.map(getPlayerById).filter(Boolean);
+    const myPower = teamPowerFromRoster(myRoster);
+    setUserPower(career.league, myPower);
+
+    const soyLocal = (my.home === career.teamName);
+    const equipoT = { nombre: my.home, moral: 7, local: true,  jugadores: soyLocal ? myRoster : sampleRivalSquad() };
+    const equipoR = { nombre: my.away, moral: 5, local: false, jugadores: soyLocal ? sampleRivalSquad() : myRoster };
+
+    const res = simularPartido(equipoT, equipoR, { N: 12, eventsDeck: DEFAULT_EVENTS });
+    updateTable(career.league, my.home, my.away, res.score);
+
+    simulateAIRound(career.league, matches);
+
+    career.league.jornada++;
+    alert(`${my.home} ${res.score.home} - ${res.score.away} ${my.away}`);
+
+    const tabla = document.getElementById("tabla-clasificacion");
+    if (tabla) {
+      tabla.innerHTML = (function tableHTML(){
+        const rows = standingsSorted(career.league).map(t => `
+          <tr>
+            <td>${t.name}</td><td>${t.pj}</td><td>${t.pg}</td><td>${t.pe}</td><td>${t.pp}</td>
+            <td>${t.gf}</td><td>${t.gc}</td><td>${t.gf - t.gc}</td><td><strong>${t.pts}</strong></td>
+          </tr>`).join("");
+        return `
+          <table style="border-collapse:collapse; width:100%; max-width:760px;">
+            <thead>
+              <tr><th>Equipo</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>PTS</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+      })();
+    }
+
+    if (career.league.jornada > career.league.rivals.length) {
+      btnJugar.textContent = "Liga finalizada ✔️";
+      btnJugar.disabled = true;
+    } else {
+      btnJugar.textContent = `Jugar jornada ${career.league.jornada} ▶️`;
+    }
+
+    // (opcional) pequeño ruido en power IA
+    Object.keys(career.league.power).forEach(name=>{
+      if(name === career.teamName) return;
+      let p = career.league.power[name];
+      p += (Math.random()-0.5)*0.05;
+      career.league.power[name] = Math.max(0.80, Math.min(1.20, p));
+    });
   };
-}
 
-const btnJugar = root.querySelector("#btn-jugar-jornada");
-if (!btnJugar) {
-  console.error("[UI] No encuentro #btn-jugar-jornada. Revisa el innerHTML o el id del botón.");
-  return; // evita el error de 'null.onclick'
-}
-
-btnJugar.onclick = ()=>{
-  const matches = getRoundMatches(career.league);
-  const my = matches.find(m => m.home === career.teamName || m.away === career.teamName);
-  if(!my){ alert("¡Liga terminada!"); return; }
-
-  const myRoster = career.plantilla.map(getPlayerById).filter(Boolean);
-  const myPower = teamPowerFromRoster(myRoster);
-  setUserPower(career.league, myPower);
-
-  const soyLocal = (my.home === career.teamName);
-  const equipoT = { nombre: my.home, moral: 7, local: true,  jugadores: soyLocal ? myRoster : sampleRivalSquad() };
-  const equipoR = { nombre: my.away, moral: 5, local: false, jugadores: soyLocal ? sampleRivalSquad() : myRoster };
-
-  const res = simularPartido(equipoT, equipoR, { N: 12, eventsDeck: DEFAULT_EVENTS });
-  updateTable(career.league, my.home, my.away, res.score);
-
-  simulateAIRound(career.league, matches);
-
-  career.league.jornada++;
-  alert(`${my.home} ${res.score.home} - ${res.score.away} ${my.away}`);
-
-  const tabla = document.getElementById("tabla-clasificacion");
-  if (tabla) {
-    tabla.innerHTML = (function tableHTML(){
-      const rows = standingsSorted(career.league).map(t => `
-        <tr>
-          <td>${t.name}</td><td>${t.pj}</td><td>${t.pg}</td><td>${t.pe}</td><td>${t.pp}</td>
-          <td>${t.gf}</td><td>${t.gc}</td><td>${t.gf - t.gc}</td><td><strong>${t.pts}</strong></td>
-        </tr>`).join("");
-      return `
-        <table style="border-collapse:collapse; width:100%; max-width:760px;">
-          <thead>
-            <tr><th>Equipo</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>PTS</th></tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>`;
-    })();
+  // Escuadrón simple del rival
+  function sampleRivalSquad(){
+    const gk  = sampleForRole("GK", 1);
+    const dfs = sampleForRole("DEF", 2);
+    const mfs = sampleForRole("MID", 2);
+    const atk = sampleForRole("ATK", 1);
+    return [...gk, ...dfs, ...mfs, ...atk];
   }
-  if (career.league.jornada > career.league.rivals.length) {
-    btnJugar.textContent = "Liga finalizada ✔️";
-    btnJugar.disabled = true;
-  } else {
-    btnJugar.textContent = `Jugar jornada ${career.league.jornada} ▶️`;
-  }
+} // <-- ¡ESTA llave cierra renderClubSummary()!
 
-  Object.keys(career.league.power).forEach(name=>{
-    if(name === career.teamName) return;
-    let p = career.league.power[name];
-    p += (Math.random()-0.5)*0.05;
-    career.league.power[name] = Math.max(0.80, Math.min(1.20, p));
-  });
-};
 // --------- ARRANQUE ---------
 showScreen("screen-setup");
 renderSetup();
-
-
-
