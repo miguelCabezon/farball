@@ -353,6 +353,72 @@ function renderClubSummary(){
 
   if (!career.league) {
     career.league = createLeague(career.teamName, RIVALS);
+    // IMPORTS extra arriba (si no los tienes):
+// import { getRoundMatches, simulateAIRound, setUserPower } from './data.js';
+// import { teamPowerFromRoster } from './engine.js';
+
+root.querySelector("#btn-jugar-jornada").onclick = ()=>{
+  const j = career.league.jornada;
+  const matches = getRoundMatches(career.league);
+  const my = matches.find(m => m.home === career.teamName || m.away === career.teamName);
+  if(!my){ alert("¡Liga terminada!"); return; }
+
+  // 1) Actualiza power de tu equipo según tu plantilla
+  const myRoster = career.plantilla.map(getPlayerById).filter(Boolean);
+  const myPower = teamPowerFromRoster(myRoster);
+  setUserPower(career.league, myPower);
+
+  // 2) Construye tus equipos para el motor (partido del usuario)
+  const soyLocal = (my.home === career.teamName);
+  const equipoT = {
+    nombre: my.home, moral: 7, local: true,
+    jugadores: soyLocal ? myRoster : sampleRivalSquad()
+  };
+  const equipoR = {
+    nombre: my.away, moral: 5, local: false,
+    jugadores: soyLocal ? sampleRivalSquad() : myRoster
+  };
+
+  const res = simularPartido(equipoT, equipoR, { N: 12, eventsDeck: DEFAULT_EVENTS });
+  updateTable(career.league, my.home, my.away, res.score);
+
+  // 3) Simula el resto de partidos de la jornada con IA (power-based)
+  simulateAIRound(career.league, matches);
+
+  // 4) Avanza jornada y refresca UI
+  career.league.jornada++;
+  alert(`${my.home} ${res.score.home} - ${res.score.away} ${my.away}`);
+
+  document.getElementById("tabla-clasificacion").innerHTML = (function tableHTML(){
+    const rows = standingsSorted(career.league).map(t => `
+      <tr>
+        <td>${t.name}</td><td>${t.pj}</td><td>${t.pg}</td><td>${t.pe}</td><td>${t.pp}</td>
+        <td>${t.gf}</td><td>${t.gc}</td><td>${t.gf - t.gc}</td><td><strong>${t.pts}</strong></td>
+      </tr>`).join("");
+    return `
+      <table style="border-collapse:collapse; width:100%; max-width:760px;">
+        <thead><tr><th>Equipo</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>PTS</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  })();
+
+  const btnJugar = root.querySelector("#btn-jugar-jornada");
+  if (career.league.jornada > career.league.rivals.length) {
+    btnJugar.textContent = "Liga finalizada ✔️";
+    btnJugar.disabled = true;
+  } else {
+    btnJugar.textContent = `Jugar jornada ${career.league.jornada} ▶️`;
+  }
+
+  // (opcional) ruido semanal en power de IA
+  Object.keys(career.league.power).forEach(name=>{
+    if(name === career.teamName) return;
+    let p = career.league.power[name];
+    p += (Math.random()-0.5)*0.05;           // +-0.025
+    career.league.power[name] = Math.max(0.80, Math.min(1.20, p));
+  });
+};
+
   }
 
   const byRole = { GK:[], DEF:[], MID:[], ATK:[] };
@@ -460,6 +526,7 @@ function renderClubSummary(){
 // --------- ARRANQUE ---------
 showScreen("screen-setup");
 renderSetup();
+
 
 
 
