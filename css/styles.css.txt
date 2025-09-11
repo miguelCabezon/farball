@@ -1,0 +1,11 @@
+:root {
+  --primary: #89CFF0; /* azul pastel por defecto */
+}
+body { accent-color: var(--primary); }
+.button, button {
+  border-color: var(--primary);
+}
+.badge-primary {
+  background: var(--primary);
+  color: #0b2540; /* contraste suave */
+}

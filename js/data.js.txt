@@ -1,0 +1,75 @@
+export const THEME = {
+  primaryHex: "#89CFF0", // azul pastel
+  // puedes leer esto en tu CSS con style setProperty('--primary', THEME.primaryHex)
+};
+
+export const CRESTS = [
+  { id: "crest1", name: "Escudo 1", src: "assets/crest1.png" },
+  { id: "crest2", name: "Escudo 2", src: "assets/crest2.png" },
+  { id: "crest3", name: "Escudo 3", src: "assets/crest3.png" },
+  { id: "crest4", name: "Escudo 4", src: "assets/crest4.png" },
+  { id: "crest5", name: "Escudo 5", src: "assets/crest5.png" },
+];
+
+export const RIVALS = [
+  "Minabo de Kiev",
+  "Vodka Junior",
+  "Bayern de los Caídos",
+  "Aston Birra",
+  "Yayo Vallecano",
+  "Borrachos FC",
+  "Los Cojos",
+  "Real Patadas",
+];
+
+// ====== POOL DE JUGADORES (30) ======
+// Nota: tier (1-3) ≈ calidad/precio; salario 1-4; blurb y quirks son libres.
+// Cambia lo que quieras: nombres, stats, etc. El motor usa "stats" y "rol".
+export const jugadoresPool = [
+  // ---- PORTEROS (GK) x4 ----
+  { id:"gk1", rol:"GK", tier:2, salario:3, nombre:"Paco 'Botellines'", blurb:"Reflejos decentes, madrugar le mata.", quirks:["resacoso"], stats:{ tecnica:3, velocidad:2, fuerza:3, resaca:6, carisma:4, reflejos:6 } },
+  { id:"gk2", rol:"GK", tier:1, salario:2, nombre:"Rafa 'Manoplas'", blurb:"Agarra poco, despeja todo.", quirks:["puños"], stats:{ tecnica:2, velocidad:3, fuerza:4, resaca:3, carisma:3, reflejos:5 } },
+  { id:"gk3", rol:"GK", tier:3, salario:4, nombre:"Tino 'Gato'", blurb:"Salta como si tuviera muelles.", quirks:["felino"], stats:{ tecnica:4, velocidad:4, fuerza:4, resaca:2, carisma:5, reflejos:8 } },
+  { id:"gk4", rol:"GK", tier:2, salario:3, nombre:"Suso 'Termo'", blurb:"Siempre caliente… o se enfría rápido.", quirks:["rachas"], stats:{ tecnica:3, velocidad:3, fuerza:4, resaca:4, carisma:4, reflejos:6 } },
+
+  // ---- DEFENSAS (DEF) x8 ----
+  { id:"def1", rol:"DEF", tier:2, salario:2, nombre:"Manolo 'Condicional'", blurb:"Corte limpio salvo días de firma.", quirks:["condicional"], stats:{ tecnica:2, velocidad:4, fuerza:7, resaca:3, carisma:2 } },
+  { id:"def2", rol:"DEF", tier:1, salario:1, nombre:"Capi 'El Mudo'", blurb:"Habla poco, pega mucho.", quirks:["silencioso"], stats:{ tecnica:3, velocidad:3, fuerza:6, resaca:2, carisma:1 } },
+  { id:"def3", rol:"DEF", tier:2, salario:2, nombre:"Panza", blurb:"Más barriga que cintura, pero barre.", quirks:["barrendero"], stats:{ tecnica:3, velocidad:3, fuerza:6, resaca:3, carisma:3 } },
+  { id:"def4", rol:"DEF", tier:3, salario:4, nombre:"Rulo 'Muralla'", blurb:"Cuerpo a cuerpo ganador.", quirks:["muralla"], stats:{ tecnica:4, velocidad:5, fuerza:8, resaca:2, carisma:3 } },
+  { id:"def5", rol:"DEF", tier:2, salario:2, nombre:"Largo", blurb:"Piernas infinitas, despejes eternos.", quirks:["pata_larga"], stats:{ tecnica:3, velocidad:5, fuerza:7, resaca:2, carisma:3 } },
+  { id:"def6", rol:"DEF", tier:1, salario:1, nombre:"Tibur", blurb:"Muerde… a veces al aire.", quirks:["impetuoso"], stats:{ tecnica:3, velocidad:4, fuerza:5, resaca:2, carisma:3 } },
+  { id:"def7", rol:"DEF", tier:2, salario:3, nombre:"Chato", blurb:"Cabecea todo lo que vuela.", quirks:["cabezazo"], stats:{ tecnica:3, velocidad:4, fuerza:7, resaca:3, carisma:2 } },
+  { id:"def8", rol:"DEF", tier:3, salario:4, nombre:"Rafa 'Stopper'", blurb:"Lee el juego mejor que el árbitro.", quirks:["lector"], stats:{ tecnica:5, velocidad:6, fuerza:7, resaca:2, carisma:4 } },
+
+  // ---- MEDIOS (MID) x10 ----
+  { id:"mid1", rol:"MID", tier:2, salario:2, nombre:"Tato", blurb:"Distribuye sin mirar (a veces mal).", quirks:["no_look"], stats:{ tecnica:6, velocidad:5, fuerza:4, resaca:2, carisma:5 } },
+  { id:"mid2", rol:"MID", tier:3, salario:4, nombre:"Guti de Barrio", blurb:"Calidad de chiringuito premium.", quirks:["tacon"], stats:{ tecnica:8, velocidad:4, fuerza:3, resaca:3, carisma:6 } },
+  { id:"mid3", rol:"MID", tier:2, salario:2, nombre:"Nano", blurb:"Pequeño, molesto y omnipresente.", quirks:["mosca"], stats:{ tecnica:5, velocidad:5, fuerza:4, resaca:1, carisma:5 } },
+  { id:"mid4", rol:"MID", tier:1, salario:1, nombre:"Fofo", blurb:"Controla, pisa, y ya si eso pasa.", quirks:["pausado"], stats:{ tecnica:4, velocidad:3, fuerza:4, resaca:3, carisma:4 } },
+  { id:"mid5", rol:"MID", tier:2, salario:3, nombre:"Chispa", blurb:"Aparece y desaparece como truco.", quirks:["chisposo"], stats:{ tecnica:6, velocidad:6, fuerza:4, resaca:2, carisma:4 } },
+  { id:"mid6", rol:"MID", tier:2, salario:2, nombre:"Tiki", blurb:"Paredes y paredes y paredes.", quirks:["tiki"], stats:{ tecnica:6, velocidad:4, fuerza:3, resaca:2, carisma:5 } },
+  { id:"mid7", rol:"MID", tier:2, salario:2, nombre:"Taka", blurb:"Recibe, gira, la lía poco.", quirks:["asegurador"], stats:{ tecnica:5, velocidad:5, fuerza:3, resaca:3, carisma:5 } },
+  { id:"mid8", rol:"MID", tier:3, salario:4, nombre:"Pelé de Portal", blurb:"Sombreros en espacios mínimos.", quirks:["filigranas"], stats:{ tecnica:8, velocidad:5, fuerza:3, resaca:2, carisma:6 } },
+  { id:"mid9", rol:"MID", tier:1, salario:1, nombre:"Yayo", blurb:"Poco sprint, mucha pillería.", quirks:["zorro"], stats:{ tecnica:5, velocidad:2, fuerza:3, resaca:1, carisma:7 } },
+  { id:"mid10", rol:"MID", tier:2, salario:2, nombre:"Piru", blurb:"Amaga hasta para beber agua.", quirks:["teatro"], stats:{ tecnica:6, velocidad:5, fuerza:3, resaca:2, carisma:5 } },
+
+  // ---- DELANTEROS (ATK) x8 ----
+  { id:"atk1", rol:"ATK", tier:3, salario:4, nombre:"Charly 'Speedy'", blurb:"Corre como si cerrara el metro.", quirks:["sprinter"], stats:{ tecnica:6, velocidad:8, fuerza:3, resaca:4, carisma:6 } },
+  { id:"atk2", rol:"ATK", tier:2, salario:3, nombre:"Pitu", blurb:"Lo mete todo… cuando va entre palos.", quirks:["rachas"], stats:{ tecnica:6, velocidad:6, fuerza:3, resaca:2, carisma:4 } },
+  { id:"atk3", rol:"ATK", tier:1, salario:2, nombre:"Mono", blurb:"Se cuelga del larguero si hace falta.", quirks:["acrobata"], stats:{ tecnica:5, velocidad:6, fuerza:3, resaca:2, carisma:4 } },
+  { id:"atk4", rol:"ATK", tier:2, salario:3, nombre:"Zapa", blurb:"Zapatazos desde Cuenca.", quirks:["cañon"], stats:{ tecnica:5, velocidad:5, fuerza:4, resaca:3, carisma:4 } },
+  { id:"atk5", rol:"ATK", tier:2, salario:2, nombre:"Pollo", blurb:"Mucho pique, poca pausa.", quirks:["temperamental"], stats:{ tecnica:5, velocidad:6, fuerza:3, resaca:2, carisma:4 } },
+  { id:"atk6", rol:"ATK", tier:3, salario:4, nombre:"Matute", blurb:"Huele el gol como las ratas al queso.", quirks:["olfato"], stats:{ tecnica:7, velocidad:7, fuerza:4, resaca:2, carisma:5 } },
+  { id:"atk7", rol:"ATK", tier:1, salario:1, nombre:"Trompo", blurb:"Gira, gira… y se marea.", quirks:["spins"], stats:{ tecnica:4, velocidad:5, fuerza:3, resaca:3, carisma:3 } },
+  { id:"atk8", rol:"ATK", tier:2, salario:3, nombre:"Paquetes", blurb:"Define raro pero entra.", quirks:["churros"], stats:{ tecnica:6, velocidad:5, fuerza:4, resaca:2, carisma:4 } },
+];
+
+// ====== UTILIDAD (opcional) ======
+// Baraja y devuelve N jugadores por rol, con mezcla de tiers simple
+export function sampleForRole(role, n = 4) {
+  const pool = jugadoresPool.filter(j => j.rol === role);
+  // Mezcla tonta (orden aleatorio)
+  const arr = pool.sort(() => Math.random() - 0.5);
+  return arr.slice(0, Math.min(n, arr.length));
+}
