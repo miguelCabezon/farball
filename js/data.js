@@ -73,17 +73,31 @@ export function sampleForRole(role, n = 4) {
   const arr = pool.sort(() => Math.random() - 0.5);
   return arr.slice(0, Math.min(n, arr.length));
 }
-// --- Liga mínima: tu equipo + rivales, una vuelta ---
+// === LIGA con rivales y potencia básica ===
 export function createLeague(userTeamName, rivals) {
   const teams = [userTeamName, ...rivals].map(n => ({
-    name: n,
-    pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0
+    name: n, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0
   }));
+  // potencia inicial para IA (base 0.85–1.15)
+  const power = {};
+  teams.forEach(t => { power[t.name] = 0.85 + Math.random() * 0.30; });
 
-  // calendario: juegas 1 partido por rival (tú como local para simplificar)
-  const fixtures = rivals.map(r => ({ home: userTeamName, away: r }));
+  return { user: userTeamName, rivals: [...rivals], teams, power, jornada: 1 };
+}
 
-  return { teams, fixtures, jornada: 1 };
+// Recalcular power del usuario a partir de su plantilla real
+export function setUserPower(league, userPower){
+  league.power[league.user] = userPower;
+}
+
+// Orden de clasificación
+export function standingsSorted(league){
+  return [...league.teams].sort((a,b)=>{
+    if (b.pts !== a.pts) return b.pts - a.pts;
+    const dga = a.gf - a.gc, dgb = b.gf - b.gc;
+    if (dgb !== dga) return dgb - dga;
+    return b.gf - a.gf;
+  });
 }
 
 export function updateTable(league, home, away, score) {
@@ -97,13 +111,80 @@ export function updateTable(league, home, away, score) {
   else { th.pe++; ta.pe++; th.pts++; ta.pts++; }
 }
 
-export function standingsSorted(league){
-  return [...league.teams].sort((a,b)=>{
-    if (b.pts !== a.pts) return b.pts - a.pts;
-    const dga = a.gf - a.gc, dgb = b.gf - b.gc;
-    if (dgb !== dga) return dgb - dga;
-    return b.gf - a.gf;
-  });
+// === Emparejamientos jornada (usuario vs rival[j-1], resto se cruzan) ===
+export function getRoundMatches(league){
+  const { user, rivals, jornada } = league;
+  const idx = jornada - 1;
+  const matches = [];
+  const rival = rivals[idx % rivals.length];
+  matches.push({ home: user, away: rival });
+
+  const pool = rivals.filter(r => r !== rival);
+  // shuffle determinista por jornada
+  let seed = 1234 + jornada * 777;
+  function rand(){ seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 2**32; }
+  for(let i=pool.length-1;i>0;i--){
+    const j = Math.floor(rand()*(i+1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  for(let i=0;i<pool.length;i+=2){
+    if(pool[i+1]) matches.push({ home: pool[i], away: pool[i+1] });
+  }
+  return matches;
 }
 
+// === Simulación IA con power (logit simple + goles razonables) ===
+function outcomeFromPower(ph, pa){
+  const k = 2.2;                         // sensibilidad (sube/baja para más/menos favoritismo)
+  const pHomeWin = 1/(1 + Math.pow(10, -k*(ph - pa))); // 0..1
+  // Partimos de un 22% de empate y lo ajustamos levemente por equilibrio
+  let pDraw = 0.22 * (1 - Math.min(0.5, Math.abs(ph - pa))); // más empate si están igualados
+  pDraw = Math.max(0.12, Math.min(0.28, pDraw));
+  const pAwayWin = 1 - pHomeWin - pDraw;
 
+  const r = Math.random();
+  if (r < pHomeWin) return "H";
+  if (r < pHomeWin + pDraw) return "D";
+  return "A";
+}
+
+function goalsFromOutcome(outcome, ph, pa){
+  // Medias base con sesgo local y poder
+  const baseH = 1.25 * ph / (0.9 + 0.2*pa);
+  const baseA = 1.05 * pa / (0.95 + 0.2*ph);
+
+  function sample(mu){
+    // discretización simple tipo Poisson-like
+    const t = [
+      {g:0,p: Math.max(0.10, 0.55 - mu*0.25)},
+      {g:1,p: Math.min(0.50, 0.30 + mu*0.20)},
+      {g:2,p: Math.min(0.30, 0.12 + mu*0.15)},
+      {g:3,p: Math.min(0.15, 0.06 + mu*0.08)},
+      {g:4,p: 1.00},
+    ];
+    let r = Math.random(), acc = 0;
+    for(const it of t){ acc += it.p; if(r <= acc) return it.g; }
+    return 0;
+  }
+
+  let gh = sample(baseH), ga = sample(baseA);
+
+  // Corrige para respetar el outcome deseado
+  if (outcome === "H" && gh <= ga) gh = Math.max(ga+1, gh+1);
+  if (outcome === "A" && ga <= gh) ga = Math.max(gh+1, ga+1);
+  if (outcome === "D") { const m = Math.max(0, Math.min(3, Math.round((gh+ga)/2))); gh = ga = m; }
+
+  return { home: gh, away: ga };
+}
+
+export function simulateAIRound(league, matches){
+  matches.forEach(m => {
+    if(m.home === league.user || m.away === league.user) return; // el del user lo maneja UI
+    const ph = league.power[m.home] ?? 1.0;
+    const pa = league.power[m.away] ?? 1.0;
+
+    const outcome = outcomeFromPower(ph, pa);
+    const score = goalsFromOutcome(outcome, ph, pa);
+    updateTable(league, m.home, m.away, score);
+  });
+}
