@@ -117,7 +117,7 @@ function renderDraft(){
     showScreen("screen-draft");
     renderDraftDefensas();
       // Aquí llamaremos a renderDraftDefensas() en la siguiente iteración.
-      alert("Perfecto: portero fichado. A continuación montamos la ronda de DEFENSAS.");
+      // alert("Perfecto: portero fichado. A continuación montamos la ronda de DEFENSAS.");
       // Por ahora, volvemos a setup o nos quedamos aquí.
       // showScreen("screen-setup"); renderSetup();
     };
@@ -361,27 +361,17 @@ function renderDraftDelantero(){
 }
 
 // ----------------- Resumen del club tras el draft --------------
+// ----------------- Resumen del club tras el draft --------------
 function renderClubSummary(){
-  if (!career.league) {
-  career.league = createLeague(career.teamName, RIVALS);
-  }
-  function tableHTML(){
-  const rows = standingsSorted(career.league).map(t => `
-    <tr>
-      <td>${t.name}</td><td>${t.pj}</td><td>${t.pg}</td><td>${t.pe}</td><td>${t.pp}</td>
-      <td>${t.gf}</td><td>${t.gc}</td><td>${t.gf - t.gc}</td><td><strong>${t.pts}</strong></td>
-    </tr>`).join("");
-  return `
-    <table style="border-collapse:collapse; width:100%; max-width:760px;">
-      <thead>
-        <tr><th>Equipo</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>PTS</th></tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>`;
-}
   const root = document.getElementById("screen-club");
   if(!root) throw new Error("Falta #screen-club");
 
+  // Crear liga si no existe
+  if (!career.league) {
+    career.league = createLeague(career.teamName, RIVALS);
+  }
+
+  // Agrupar plantilla por rol
   const byRole = { GK:[], DEF:[], MID:[], ATK:[] };
   career.plantilla.forEach(id=>{
     const p = getPlayerById(id);
@@ -404,43 +394,89 @@ function renderClubSummary(){
     `;
   }
 
+  function tableHTML(){
+    const rows = standingsSorted(career.league).map(t => `
+      <tr>
+        <td>${t.name}</td><td>${t.pj}</td><td>${t.pg}</td><td>${t.pe}</td><td>${t.pp}</td>
+        <td>${t.gf}</td><td>${t.gc}</td><td>${t.gf - t.gc}</td><td><strong>${t.pts}</strong></td>
+      </tr>`).join("");
+    return `
+      <table style="border-collapse:collapse; width:100%; max-width:760px;">
+        <thead>
+          <tr><th>Equipo</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>PTS</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+
   root.innerHTML = `
-  <hr style="margin:16px 0;">
-  <h3>Clasificación (Jornada ${career.league.jornada - 1})</h3>
-  <div id="tabla-clasificacion">${tableHTML()}</div>
-  <div style="margin-top:12px;">
-    <button id="btn-jugar">Jugar jornada ${career.league.jornada} ▶️</button>
-  </div>
-root.querySelector("#btn-jugar").onclick = ()=>{
-  const j = career.league.jornada;
-  const fixture = career.league.fixtures[j-1];
-  if(!fixture){ alert("¡Liga terminada!"); return; }
+    <h2>${career.teamName} — Plantilla final</h2>
+    <p><strong>Presupuesto restante:</strong> ${formatCoins(career.coins)}</p>
+    ${listRole("GK", byRole.GK)}
+    ${listRole("DEF", byRole.DEF)}
+    ${listRole("MID", byRole.MID)}
+    ${listRole("ATK", byRole.ATK)}
 
-  // Construir equipoT desde la plantilla elegida
-  const equipoT = {
-    nombre: career.teamName, moral: 7, local: true,
-    jugadores: career.plantilla.map(getPlayerById).filter(Boolean)
+    <hr style="margin:16px 0;">
+    <h3>Clasificación (Jornada ${Math.max(0, career.league.jornada - 1)})</h3>
+    <div id="tabla-clasificacion">${tableHTML()}</div>
+
+    <div style="margin-top:12px; display:flex; gap:8px;">
+      <button id="btn-jugar-jornada">Jugar jornada ${career.league.jornada} ▶️</button>
+      <button id="btn-rehacer">Rehacer draft 🔄</button>
+    </div>
+  `;
+
+  // --- handlers ---
+  root.querySelector("#btn-rehacer").onclick = ()=>{
+    career.plantilla = [];
+    career.coins = 12;
+    career.league = null;
+    showScreen("screen-draft");
+    renderDraft(); // vuelve a la ronda de portero
   };
-  const equipoR = { nombre: fixture.away, moral: 5, local: false, jugadores: sampleRivalSquad() };
 
-  const res = simularPartido(equipoT, equipoR, { N: 12, eventsDeck: DEFAULT_EVENTS });
-  updateTable(career.league, fixture.home, fixture.away, res.score);
-  career.league.jornada++;
+  root.querySelector("#btn-jugar-jornada").onclick = ()=>{
+    const j = career.league.jornada;
+    const fixture = career.league.fixtures[j-1];
+    if(!fixture){ alert("¡Liga terminada!"); return; }
 
-  alert(`${fixture.home} ${res.score.home} - ${res.score.away} ${fixture.away}`);
+    // Construir equipoT desde plantilla
+    const equipoT = {
+      nombre: career.teamName, moral: 7, local: true,
+      jugadores: career.plantilla.map(getPlayerById).filter(Boolean)
+    };
+    const equipoR = {
+      nombre: fixture.away, moral: 5, local: false,
+      jugadores: sampleRivalSquad()
+    };
 
-  // refrescar tabla
-  document.getElementById("tabla-clasificacion").innerHTML = tableHTML();
-  // refrescar cabecera con jornada (re-render completo si prefieres)
-};
-function sampleRivalSquad(){
-  // Saca 1 GK, 2 DEF, 2 MID, 1 ATK aleatorios del pool (simple)
-  const gk  = sampleForRole("GK", 1);
-  const dfs = sampleForRole("DEF", 2);
-  const mfs = sampleForRole("MID", 2);
-  const atk = sampleForRole("ATK", 1);
-  return [...gk, ...dfs, ...mfs, ...atk];
+    const res = simularPartido(equipoT, equipoR, { N: 12, eventsDeck: DEFAULT_EVENTS });
+    updateTable(career.league, fixture.home, fixture.away, res.score);
+    career.league.jornada++;
+
+    alert(`${fixture.home} ${res.score.home} - ${res.score.away} ${fixture.away}`);
+
+    // refrescar tabla y botón (número de jornada)
+    document.getElementById("tabla-clasificacion").innerHTML = tableHTML();
+    const btnJugar = root.querySelector("#btn-jugar-jornada");
+    if (career.league.jornada > career.league.fixtures.length) {
+      btnJugar.textContent = "Liga finalizada ✔️";
+      btnJugar.disabled = true;
+    } else {
+      btnJugar.textContent = `Jugar jornada ${career.league.jornada} ▶️`;
+    }
+  };
+
+  function sampleRivalSquad(){
+    const gk  = sampleForRole("GK", 1);
+    const dfs = sampleForRole("DEF", 2);
+    const mfs = sampleForRole("MID", 2);
+    const atk = sampleForRole("ATK", 1);
+    return [...gk, ...dfs, ...mfs, ...atk];
+  }
 }
+
   
     <h2>${career.teamName} — Plantilla final</h2>
     <p><strong>Presupuesto restante:</strong> ${formatCoins(career.coins)}</p>
@@ -466,6 +502,7 @@ function sampleRivalSquad(){
     renderDraft(); // vuelve a la ronda de porteros
   };
 }
+
 
 
 
