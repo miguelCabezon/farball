@@ -1,4 +1,4 @@
-// js/ui.js — Flujo de pantallas y draft completo
+// js/ui.js — Flujo de pantallas, draft y liga (versión estable)
 
 // --------- IMPORTS ---------
 import {
@@ -426,10 +426,7 @@ function renderClubSummary(){
   }
 
   const btnJugar = root.querySelector("#btn-jugar-jornada");
-  if (!btnJugar) {
-    console.error("[UI] No encuentro #btn-jugar-jornada. Revisa el innerHTML o el id del botón.");
-    return; // evita el error de 'null.onclick'
-  }
+  if (!btnJugar) return;
 
   btnJugar.onclick = ()=>{
     const matches = getRoundMatches(career.league);
@@ -453,22 +450,7 @@ function renderClubSummary(){
     alert(`${my.home} ${res.score.home} - ${res.score.away} ${my.away}`);
 
     const tabla = document.getElementById("tabla-clasificacion");
-    if (tabla) {
-      tabla.innerHTML = (function tableHTML(){
-        const rows = standingsSorted(career.league).map(t => `
-          <tr>
-            <td>${t.name}</td><td>${t.pj}</td><td>${t.pg}</td><td>${t.pe}</td><td>${t.pp}</td>
-            <td>${t.gf}</td><td>${t.gc}</td><td>${t.gf - t.gc}</td><td><strong>${t.pts}</strong></td>
-          </tr>`).join("");
-        return `
-          <table style="border-collapse:collapse; width:100%; max-width:760px;">
-            <thead>
-              <tr><th>Equipo</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>PTS</th></tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>`;
-      })();
-    }
+    if (tabla) tabla.innerHTML = tableHTML();
 
     if (career.league.jornada > career.league.rivals.length) {
       btnJugar.textContent = "Liga finalizada ✔️";
@@ -477,7 +459,6 @@ function renderClubSummary(){
       btnJugar.textContent = `Jugar jornada ${career.league.jornada} ▶️`;
     }
 
-    // (opcional) pequeño ruido en power IA
     Object.keys(career.league.power).forEach(name=>{
       if(name === career.teamName) return;
       let p = career.league.power[name];
@@ -494,8 +475,9 @@ function renderClubSummary(){
     const atk = sampleForRole("ATK", 1);
     return [...gk, ...dfs, ...mfs, ...atk];
   }
-} // <-- ¡ESTA llave cierra renderClubSummary()!
+}
 
 // --------- ARRANQUE ---------
 showScreen("screen-setup");
 renderSetup();
+
