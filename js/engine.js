@@ -191,4 +191,13 @@ export function simularPartido(teamT, teamR, options={}){
     eventsUsed
   };
 }
+export function teamPowerFromRoster(jugadores){
+  const { A, D } = ratingEquipo({ jugadores });
+  // mezcla simple: ataque pesa algo más que defensa
+  let base = 0.6 * A + 0.4 * D;         // ~ escala 0..20 aprox según tus fórmulas
+  let power = base / 10;                 // ~ normaliza a ~1.0
+  power = Math.max(0.75, Math.min(1.25, power)); // acota
+  return power;
+}
+
 
