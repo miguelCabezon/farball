@@ -73,5 +73,37 @@ export function sampleForRole(role, n = 4) {
   const arr = pool.sort(() => Math.random() - 0.5);
   return arr.slice(0, Math.min(n, arr.length));
 }
+// --- Liga mínima: tu equipo + rivales, una vuelta ---
+export function createLeague(userTeamName, rivals) {
+  const teams = [userTeamName, ...rivals].map(n => ({
+    name: n,
+    pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0
+  }));
+
+  // calendario: juegas 1 partido por rival (tú como local para simplificar)
+  const fixtures = rivals.map(r => ({ home: userTeamName, away: r }));
+
+  return { teams, fixtures, jornada: 1 };
+}
+
+export function updateTable(league, home, away, score) {
+  const th = league.teams.find(t => t.name === home);
+  const ta = league.teams.find(t => t.name === away);
+  const { home: gh, away: ga } = score;
+  th.pj++; ta.pj++;
+  th.gf += gh; th.gc += ga; ta.gf += ga; ta.gc += gh;
+  if (gh > ga) { th.pg++; ta.pp++; th.pts += 3; }
+  else if (gh < ga) { ta.pg++; th.pp++; ta.pts += 3; }
+  else { th.pe++; ta.pe++; th.pts++; ta.pts++; }
+}
+
+export function standingsSorted(league){
+  return [...league.teams].sort((a,b)=>{
+    if (b.pts !== a.pts) return b.pts - a.pts;
+    const dga = a.gf - a.gc, dgb = b.gf - b.gc;
+    if (dgb !== dga) return dgb - dga;
+    return b.gf - a.gf;
+  });
+}
 
 
