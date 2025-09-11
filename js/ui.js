@@ -112,6 +112,8 @@ function renderDraft(){
     // Botón para avanzar (placeholder)
     const $btnNext = root.querySelector("#btn-next");
     $btnNext.onclick = () => {
+    showScreen("screen-draft");
+    renderDraftDefensas();
       // Aquí llamaremos a renderDraftDefensas() en la siguiente iteración.
       alert("Perfecto: portero fichado. A continuación montamos la ronda de DEFENSAS.");
       // Por ahora, volvemos a setup o nos quedamos aquí.
@@ -196,5 +198,219 @@ function renderSetup(){
 // -------- Init --------
 showScreen("screen-setup");
 renderSetup();
+
+// ============================================================
+// DRAFT GENÉRICO (multi-selección) para DEF, MID, ATK
+// ============================================================
+
+function renderDraftRoundMulti({ 
+  title, role, need, optionsCount, nextTitle, onNext 
+}){
+  const root = document.getElementById("screen-draft");
+  if(!root) throw new Error("Falta #screen-draft");
+
+  // Opciones a mostrar
+  const opciones = sampleForRole(role, optionsCount);
+  const selected = new Set();
+
+  root.innerHTML = `
+    <h2 style="margin:0 0 8px;">${title}</h2>
+    <div style="margin: 0 0 10px; font-size:14px;">
+      <strong>Equipo:</strong> ${career.teamName || 'Tu equipo'}
+      — <strong>Presupuesto:</strong> <span id="coins">${formatCoins(career.coins)}</span>
+      — <strong>Seleccionados:</strong> <span id="picked">0</span> / ${need}
+    </div>
+    <div id="cards" style="display:flex; gap:12px; flex-wrap:wrap; margin:10px 0;"></div>
+
+    <div style="display:flex; gap:8px; align-items:center; margin-top:12px;">
+      <button id="btn-confirm" disabled>Confirmar ${need} ${role}</button>
+      <button id="btn-cancel">⬅️ Volver</button>
+      <span id="warn" style="color:#b91c1c; font-size:13px; display:none;">No te llega el presupuesto o te faltan jugadores.</span>
+    </div>
+
+    <hr style="margin:16px 0;">
+    <div id="next" style="display:none;">
+      <h3>${nextTitle}</h3>
+      <button id="btn-next">Siguiente ronda ➡️</button>
+    </div>
+  `;
+
+  const $cards = root.querySelector("#cards");
+  const $coins = root.querySelector("#coins");
+  const $picked = root.querySelector("#picked");
+  const $btnConfirm = root.querySelector("#btn-confirm");
+  const $btnCancel = root.querySelector("#btn-cancel");
+  const $warn = root.querySelector("#warn");
+  const $next = root.querySelector("#next");
+
+  // Pinta cartas
+  $cards.innerHTML = opciones.map(p => playerCardHTML(p, false)).join("");
+
+  // Click en carta → seleccionar/deseleccionar
+  $cards.querySelectorAll(".card").forEach(card=>{
+    card.addEventListener("click", ()=>{
+      const id = card.getAttribute("data-id");
+      if(selected.has(id)){
+        selected.delete(id);
+        card.style.borderColor = "#ddd";
+        card.style.boxShadow = "none";
+      } else {
+        if(selected.size >= need){
+          // Si ya tienes el cupo, no dejes pasar (o quita la más antigua si prefieres)
+          return;
+        }
+        selected.add(id);
+        card.style.borderColor = "#2563eb";
+        card.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.25)";
+      }
+      $picked.textContent = String(selected.size);
+      validate();
+    });
+  });
+
+  function selectedCost(){
+    let sum = 0;
+    selected.forEach(id => {
+      const p = getPlayerById(id);
+      sum += (p?.salario ?? 2);
+    });
+    return sum;
+  }
+
+  function validate(){
+    const okCount = selected.size === need;
+    const okBudget = selectedCost() <= career.coins;
+    $btnConfirm.disabled = !(okCount && okBudget);
+    $warn.style.display = (okCount && okBudget) ? "none" : "inline";
+  }
+
+  // Confirmar ronda
+  $btnConfirm.addEventListener("click", ()=>{
+    if(selected.size !== need) return;
+    const coste = selectedCost();
+    if(coste > career.coins) {
+      validate();
+      return;
+    }
+    // Guardar
+    selected.forEach(id => career.plantilla.push(id));
+    career.coins -= coste;
+    $coins.textContent = formatCoins(career.coins);
+
+    // Bloquear cartas
+    $cards.querySelectorAll(".card").forEach(c => c.style.pointerEvents = "none");
+    $btnConfirm.disabled = true;
+    $next.style.display = "block";
+
+    // Ir a siguiente ronda
+    root.querySelector("#btn-next").onclick = onNext;
+  });
+
+  // Volver
+  $btnCancel.addEventListener("click", ()=>{
+    showScreen("screen-setup");
+    renderSetup();
+  });
+}
+
+// ----------------- Ronda 2: DEFENSAS (elige 2) -----------------
+function renderDraftDefensas(){
+  renderDraftRoundMulti({
+    title: "Draft — Ronda 2/4: Defensas (elige 2)",
+    role: "DEF",
+    need: 2,
+    optionsCount: 6,
+    nextTitle: "Ronda 3/4: Medios (elige 2)",
+    onNext: () => {
+      showScreen("screen-draft");
+      renderDraftMedios();
+    }
+  });
+}
+
+// ----------------- Ronda 3: MEDIOS (elige 2) -------------------
+function renderDraftMedios(){
+  renderDraftRoundMulti({
+    title: "Draft — Ronda 3/4: Medios (elige 2)",
+    role: "MID",
+    need: 2,
+    optionsCount: 6,
+    nextTitle: "Ronda 4/4: Delantero (elige 1)",
+    onNext: () => {
+      showScreen("screen-draft");
+      renderDraftDelantero();
+    }
+  });
+}
+
+// ----------------- Ronda 4: DELANTERO (elige 1) ----------------
+function renderDraftDelantero(){
+  renderDraftRoundMulti({
+    title: "Draft — Ronda 4/4: Delantero (elige 1)",
+    role: "ATK",
+    need: 1,
+    optionsCount: 4,
+    nextTitle: "¡Draft completado! Ver resumen del club",
+    onNext: () => {
+      showScreen("screen-club");
+      renderClubSummary();
+    }
+  });
+}
+
+// ----------------- Resumen del club tras el draft --------------
+function renderClubSummary(){
+  const root = document.getElementById("screen-club");
+  if(!root) throw new Error("Falta #screen-club");
+
+  const byRole = { GK:[], DEF:[], MID:[], ATK:[] };
+  career.plantilla.forEach(id=>{
+    const p = getPlayerById(id);
+    if(p) byRole[p.rol]?.push(p);
+  });
+
+  function listRole(role, arr){
+    if(!arr || !arr.length) return `<p><strong>${role}:</strong> —</p>`;
+    return `
+      <p><strong>${role} (${arr.length}):</strong></p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        ${arr.map(p => `
+          <div style="border:1px solid #ddd; border-radius:10px; padding:8px 10px;">
+            <div style="font-size:12px; opacity:.7;">${p.rol}</div>
+            <div style="font-weight:700;">${p.nombre}</div>
+            <div style="font-size:12px;">${p.blurb || ""}</div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  root.innerHTML = `
+    <h2>${career.teamName} — Plantilla final</h2>
+    <p><strong>Presupuesto restante:</strong> ${formatCoins(career.coins)}</p>
+    ${listRole("GK", byRole.GK)}
+    ${listRole("DEF", byRole.DEF)}
+    ${listRole("MID", byRole.MID)}
+    ${listRole("ATK", byRole.ATK)}
+    <div style="margin-top:16px; display:flex; gap:8px;">
+      <button id="btn-jugar">Jugar primer partido ▶️</button>
+      <button id="btn-rehacer">Rehacer draft 🔄</button>
+    </div>
+  `;
+
+  // Wire botones (placeholder de partido; ya lo enchufamos a engine en el siguiente paso)
+  root.querySelector("#btn-jugar").onclick = ()=>{
+    alert("¡Listo para conectar con el motor de partido (engine.js)! En la próxima iteración mapeamos career.plantilla a equipoT y simulamos.");
+    // showScreen("screen-match"); renderMatch(); // lo haremos luego
+  };
+  root.querySelector("#btn-rehacer").onclick = ()=>{
+    career.plantilla = [];
+    career.coins = 12;
+    showScreen("screen-draft");
+    renderDraft(); // vuelve a la ronda de porteros
+  };
+}
+
+
 
 
