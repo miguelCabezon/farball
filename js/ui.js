@@ -15,6 +15,8 @@ import {
 } from './data.js';
 
 import { simularPartido, DEFAULT_EVENTS, teamPowerFromRoster } from './engine.js';
+import { createLeagueWithFixtures, getRoundMatchesByFixtures } from './data.js';
+
 
 // --------- ESTADO GLOBAL ---------
 export const career = {
@@ -352,6 +354,9 @@ function renderDraftDelantero(){
 // --------- RESUMEN + CLASIFICACIÓN ---------
 function renderClubSummary(){
   const root = document.getElementById("screen-club");
+  if (!career.league) {
+  career.league = createLeagueWithFixtures(career.teamName, RIVALS);
+  }
   if(!root) throw new Error("Falta #screen-club");
 
   if (!career.league) {
@@ -429,43 +434,41 @@ function renderClubSummary(){
   if (!btnJugar) return;
 
   btnJugar.onclick = ()=>{
-    const matches = getRoundMatches(career.league);
-    const my = matches.find(m => m.home === career.teamName || m.away === career.teamName);
-    if(!my){ alert("¡Liga terminada!"); return; }
+  const matches = getRoundMatchesByFixtures(career.league);
+  const my = matches.find(m => m.home === career.teamName || m.away === career.teamName);
+  if(!my){ alert("¡Liga terminada!"); return; }
 
-    const myRoster = career.plantilla.map(getPlayerById).filter(Boolean);
-    const myPower = teamPowerFromRoster(myRoster);
-    setUserPower(career.league, myPower);
+  // Recalcula power de TU equipo (según plantilla)
+  const myRoster = career.plantilla.map(getPlayerById).filter(Boolean);
+  const myPower = teamPowerFromRoster(myRoster);
+  setUserPower(career.league, myPower);
 
-    const soyLocal = (my.home === career.teamName);
-    const equipoT = { nombre: my.home, moral: 7, local: true,  jugadores: soyLocal ? myRoster : sampleRivalSquad() };
-    const equipoR = { nombre: my.away, moral: 5, local: false, jugadores: soyLocal ? sampleRivalSquad() : myRoster };
+  // Construye equipos de tu partido
+  const soyLocal = (my.home === career.teamName);
+  const equipoT = { nombre: my.home, moral: 7, local: true,  jugadores: soyLocal ? myRoster : sampleRivalSquad() };
+  const equipoR = { nombre: my.away, moral: 5, local: false, jugadores: soyLocal ? sampleRivalSquad() : myRoster };
 
-    const res = simularPartido(equipoT, equipoR, { N: 12, eventsDeck: DEFAULT_EVENTS });
-    updateTable(career.league, my.home, my.away, res.score);
+  // Juega tu partido con el motor
+  const res = simularPartido(equipoT, equipoR, { N: 12, eventsDeck: DEFAULT_EVENTS });
+  updateTable(career.league, my.home, my.away, res.score);
 
-    simulateAIRound(career.league, matches);
+  // Simula el resto de partidos de la jornada (IA vs IA)
+  simulateAIRound(career.league, matches);
 
-    career.league.jornada++;
-    alert(`${my.home} ${res.score.home} - ${res.score.away} ${my.away}`);
+  // Avanza y refresca
+  career.league.jornada++;
+  alert(`${my.home} ${res.score.home} - ${res.score.away} ${my.away}`);
 
-    const tabla = document.getElementById("tabla-clasificacion");
-    if (tabla) tabla.innerHTML = tableHTML();
+  document.getElementById("tabla-clasificacion").innerHTML = tableHTML();
 
-    if (career.league.jornada > career.league.rivals.length) {
-      btnJugar.textContent = "Liga finalizada ✔️";
-      btnJugar.disabled = true;
-    } else {
-      btnJugar.textContent = `Jugar jornada ${career.league.jornada} ▶️`;
-    }
+  if (career.league.jornada > career.league.totalJornadas) {
+    btnJugar.textContent = "Liga finalizada ✔️";
+    btnJugar.disabled = true;
+  } else {
+    btnJugar.textContent = `Jugar jornada ${career.league.jornada} ▶️`;
+  }
+};
 
-    Object.keys(career.league.power).forEach(name=>{
-      if(name === career.teamName) return;
-      let p = career.league.power[name];
-      p += (Math.random()-0.5)*0.05;
-      career.league.power[name] = Math.max(0.80, Math.min(1.20, p));
-    });
-  };
 
   // Escuadrón simple del rival
   function sampleRivalSquad(){
@@ -480,4 +483,5 @@ function renderClubSummary(){
 // --------- ARRANQUE ---------
 showScreen("screen-setup");
 renderSetup();
+
 
