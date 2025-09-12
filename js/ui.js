@@ -354,13 +354,10 @@ function renderDraftDelantero(){
 // --------- RESUMEN + CLASIFICACIÓN ---------
 function renderClubSummary(){
   const root = document.getElementById("screen-club");
-  if (!career.league) {
-  career.league = createLeagueWithFixtures(career.teamName, RIVALS);
-  }
-  if(!root) throw new Error("Falta #screen-club");
+   if(!root) throw new Error("Falta #screen-club");
 
-  if (!career.league) {
-    career.league = createLeague(career.teamName, RIVALS);
+    if (!career.league) {
+    career.league = createLeagueWithFixtures(career.teamName, RIVALS);
   }
 
   const byRole = { GK:[], DEF:[], MID:[], ATK:[] };
@@ -483,5 +480,6 @@ function renderClubSummary(){
 // --------- ARRANQUE ---------
 showScreen("screen-setup");
 renderSetup();
+
 
 
