@@ -168,7 +168,51 @@ export function getRoundMatchesByFixtures(league) {
   return fixtures.filter(f => f.round === jornada);
 }
 
-// Mantén updateTable y standingsSorted como ya los tienes.
+function outcomeFromPower(ph, pa){
+  const k = 2.2; // sensibilidad
+  const pHomeWin = 1/(1 + Math.pow(10, -k*(ph - pa)));
+  let pDraw = 0.22 * (1 - Math.min(0.5, Math.abs(ph - pa)));
+  pDraw = Math.max(0.12, Math.min(0.28, pDraw));
+  const pAwayWin = 1 - pHomeWin - pDraw;
+  const r = Math.random();
+  if (r < pHomeWin) return "H";
+  if (r < pHomeWin + pDraw) return "D";
+  return "A";
+}
+
+function goalsFromOutcome(outcome, ph, pa){
+  const baseH = 1.25 * ph / (0.9 + 0.2*pa);
+  const baseA = 1.05 * pa / (0.95 + 0.2*ph);
+  function sample(mu){
+    const t = [
+      {g:0,p: Math.max(0.10, 0.55 - mu*0.25)},
+      {g:1,p: Math.min(0.50, 0.30 + mu*0.20)},
+      {g:2,p: Math.min(0.30, 0.12 + mu*0.15)},
+      {g:3,p: Math.min(0.15, 0.06 + mu*0.08)},
+      {g:4,p: 1.00},
+    ];
+    let r = Math.random(), acc = 0;
+    for(const it of t){ acc += it.p; if(r <= acc) return it.g; }
+    return 0;
+  }
+  let gh = sample(baseH), ga = sample(baseA);
+  if (outcome === "H" && gh <= ga) gh = Math.max(ga+1, gh+1);
+  if (outcome === "A" && ga <= gh) ga = Math.max(gh+1, ga+1);
+  if (outcome === "D") { const m = Math.max(0, Math.min(3, Math.round((gh+ga)/2))); gh = ga = m; }
+  return { home: gh, away: ga };
+}
+
+export function simulateAIRound(league, matches){
+  matches.forEach(m => {
+    if (m.home === league.user || m.away === league.user) return; // tu partido lo simula el motor real
+    const ph = league.power[m.home] ?? 1.0;
+    const pa = league.power[m.away] ?? 1.0;
+    const outcome = outcomeFromPower(ph, pa);
+    const score = goalsFromOutcome(outcome, ph, pa);
+    updateTable(league, m.home, m.away, score);
+  });
+}
+
 
 
 
