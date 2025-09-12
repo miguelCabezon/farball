@@ -99,7 +99,7 @@ function playerCardHTML(p, selected){
 // --------- INTRO (3 slides) ---------
 function renderIntro(){
   const slides = [
-    { title:"El presi te pasa el testigo", body:"Chaval, me jubilo. Te dejo el club… poco presupuesto, campo con baches y deuda con El Tano. ¡Éxitos!" },
+    { title:"El presi te pasa el testigo", body:"Chaval, Voy a pasar un tiempo a la sombra por unos negocios mal llevados, te vas a tener que hacer cargo del equipo" },
     { title:"Tu objetivo", body:"Liga a una vuelta. Ficha con cuatro perras, gana partidos y que no detengan a nadie. Fácil, ¿no?" },
     { title:"Cómo se juega", body:"Nombre + escudo → Draft por rondas (cuida el presupuesto) → Juega jornada a jornada." }
   ];
@@ -599,3 +599,4 @@ if (!settings.introSeen) {
   showScreen("screen-setup");
   renderSetup();
 }
+
