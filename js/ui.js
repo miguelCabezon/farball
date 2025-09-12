@@ -99,28 +99,53 @@ function playerCardHTML(p, selected){
 // --------- INTRO (3 slides) ---------
 function renderIntro(){
   const slides = [
-    { title:"El presi te pasa el testigo", body:"Chaval, Voy a pasar un tiempo a la sombra por unos negocios mal llevados, te vas a tener que hacer cargo del equipo" },
-    { title:"Tu objetivo", body:"Liga a una vuelta. Ficha con cuatro perras, gana partidos y que no detengan a nadie. Fácil, ¿no?" },
-    { title:"Cómo se juega", body:"Nombre + escudo → Draft por rondas (cuida el presupuesto) → Juega jornada a jornada." }
+    {
+      title:"El presi te pasa el testigo",
+      body:"Chaval, me jubilo. Te dejo el club… poco presupuesto, campo con baches y deuda con El Tano. ¡Éxitos!",
+      img:"assets/presi.png", // <-- tu dibujo del presi gordo corrupto 😄
+      alt:"Presidente del club, traje arrugado y puro"
+    },
+    {
+      title:"Tu objetivo",
+      body:"Liga a una vuelta. Ficha con cuatro perras, gana partidos y que no detengan a nadie. Fácil, ¿no?",
+      img:"assets/presi.png",
+      alt:"Presi señalando el calendario"
+    },
+    {
+      title:"Cómo se juega",
+      body:"Nombre + escudo → Draft por rondas (cuida el presupuesto) → Juega jornada a jornada.",
+      img:"assets/presi.png",
+      alt:"Presi explicando con una pizarra"
+    }
   ];
+
   let i = 0;
   const root = document.getElementById("screen-intro");
   root.innerHTML = layout(slides[i]);
   wire();
 
   function layout(s){
+    const imgBlock = s.img ? `
+      <div class="intro-ill">
+        <img src="${s.img}" alt="${s.alt || 'Ilustración'}" onerror="this.style.display='none'">
+      </div>` : "";
+
     return `
-      <div style="max-width:680px;">
-        <h1 style="margin-bottom:6px;">${s.title}</h1>
-        <p style="font-size:15px; opacity:.9;">${s.body}</p>
-        <div style="display:flex; gap:8px; margin-top:14px;">
-          <button id="btn-prev" ${i===0?'disabled':''}>⬅️ Anterior</button>
-          <button id="btn-next">${i===slides.length-1?'Empezar ▶️':'Siguiente ➡️'}</button>
-          <button id="btn-skip" style="margin-left:auto;">Saltar ⏭️</button>
+      <div class="intro-wrap">
+        ${imgBlock}
+        <div class="intro-copy">
+          <h1>${s.title}</h1>
+          <p>${s.body}</p>
+          <div class="intro-actions">
+            <button id="btn-prev" ${i===0?'disabled':''}>⬅️ Anterior</button>
+            <button id="btn-next">${i===slides.length-1?'Empezar ▶️':'Siguiente ➡️'}</button>
+            <button id="btn-skip" class="ghost">Saltar ⏭️</button>
+          </div>
         </div>
       </div>
     `;
   }
+
   function wire(){
     const btnPrev = root.querySelector("#btn-prev");
     const btnNext = root.querySelector("#btn-next");
@@ -143,6 +168,7 @@ function renderIntro(){
     };
   }
 }
+
 
 // --------- PANTALLA: SETUP (nombre + escudo) ---------
 function renderSetup(){
@@ -599,4 +625,5 @@ if (!settings.introSeen) {
   showScreen("screen-setup");
   renderSetup();
 }
+
 
