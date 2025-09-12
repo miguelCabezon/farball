@@ -12,3 +12,25 @@ body { accent-color: var(--primary); }
 button { padding:8px 12px; border-radius:10px; border:1px solid #cfd8ff; background:#f6f8ff; cursor:pointer; }
 button:disabled { opacity:.55; cursor:not-allowed; }
 h1,h2,h3 { color:#0f172a; }
+
+.intro-wrap{
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.intro-ill img{
+  width: 220px;        /* ajusta a tu dibujo */
+  height: auto;
+  border-radius: 12px; /* opcional redondeo */
+  box-shadow: 0 6px 20px rgba(0,0,0,.10);
+}
+.intro-copy h1{ margin: 0 0 6px; }
+.intro-copy p{ margin: 0 0 12px; opacity: .9; }
+.intro-actions{ display: flex; gap: 8px; align-items: center; }
+button.ghost{ background: transparent; border-color: #ccd; }
+@media (max-width: 720px){
+  .intro-wrap{ flex-direction: column; text-align: center; }
+  .intro-ill img{ width: 60vw; max-width: 320px; }
+}
