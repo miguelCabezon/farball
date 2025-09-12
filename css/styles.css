@@ -9,3 +9,6 @@ body { accent-color: var(--primary); }
   background: var(--primary);
   color: #0b2540; /* contraste suave */
 }
+button { padding:8px 12px; border-radius:10px; border:1px solid #cfd8ff; background:#f6f8ff; cursor:pointer; }
+button:disabled { opacity:.55; cursor:not-allowed; }
+h1,h2,h3 { color:#0f172a; }
