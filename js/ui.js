@@ -29,7 +29,7 @@ export const career = {
 
 // --------- HELPERS ---------
 
-// === Settings persistentes ===
+// === Settings persistentes (UNA sola vez) ===
 const SETTINGS_KEY = "barrio_settings_v1";
 let settings = loadSettings();
 
@@ -58,10 +58,10 @@ function wireTipToggle(root){
   t.addEventListener("change", ()=>{
     settings.showTips = !t.checked; // checked = no mostrar
     saveSettings();
-    // Si acaba de desactivar, oculta todos los tips visibles
     root.querySelectorAll(".tip").forEach(el => el.style.display="none");
   });
 }
+
 function showScreen(id){
   document.querySelectorAll("[id^='screen-']").forEach(d => d.style.display = "none");
   const el = document.getElementById(id);
@@ -96,6 +96,54 @@ function playerCardHTML(p, selected){
   `;
 }
 
+// --------- INTRO (3 slides) ---------
+function renderIntro(){
+  const slides = [
+    { title:"El presi te pasa el testigo", body:"Chaval, me jubilo. Te dejo el club… poco presupuesto, campo con baches y deuda con El Tano. ¡Éxitos!" },
+    { title:"Tu objetivo", body:"Liga a una vuelta. Ficha con cuatro perras, gana partidos y que no detengan a nadie. Fácil, ¿no?" },
+    { title:"Cómo se juega", body:"Nombre + escudo → Draft por rondas (cuida el presupuesto) → Juega jornada a jornada." }
+  ];
+  let i = 0;
+  const root = document.getElementById("screen-intro");
+  root.innerHTML = layout(slides[i]);
+  wire();
+
+  function layout(s){
+    return `
+      <div style="max-width:680px;">
+        <h1 style="margin-bottom:6px;">${s.title}</h1>
+        <p style="font-size:15px; opacity:.9;">${s.body}</p>
+        <div style="display:flex; gap:8px; margin-top:14px;">
+          <button id="btn-prev" ${i===0?'disabled':''}>⬅️ Anterior</button>
+          <button id="btn-next">${i===slides.length-1?'Empezar ▶️':'Siguiente ➡️'}</button>
+          <button id="btn-skip" style="margin-left:auto;">Saltar ⏭️</button>
+        </div>
+      </div>
+    `;
+  }
+  function wire(){
+    const btnPrev = root.querySelector("#btn-prev");
+    const btnNext = root.querySelector("#btn-next");
+    const btnSkip = root.querySelector("#btn-skip");
+
+    if(btnPrev) btnPrev.onclick = ()=>{
+      if(i>0){ i--; root.innerHTML = layout(slides[i]); wire(); }
+    };
+    btnNext.onclick = ()=>{
+      if(i<slides.length-1){
+        i++; root.innerHTML = layout(slides[i]); wire();
+      } else {
+        settings.introSeen = true; saveSettings();
+        showScreen("screen-setup"); renderSetup();
+      }
+    };
+    btnSkip.onclick = ()=>{
+      settings.introSeen = true; saveSettings();
+      showScreen("screen-setup"); renderSetup();
+    };
+  }
+}
+
 // --------- PANTALLA: SETUP (nombre + escudo) ---------
 function renderSetup(){
   const root = document.getElementById("screen-setup");
@@ -109,9 +157,10 @@ function renderSetup(){
     </div>
     <div id="crest-options" style="display:flex; gap:12px; flex-wrap:wrap; margin:1em 0;"></div>
     <button id="btn-continue" disabled>Continuar ➡️</button>
-      root.innerHTML += tipHTML("🛈 Consejo: si dejas el nombre vacío te proponemos uno random; puedes cambiarlo reiniciando.");
-      wireTipToggle(root);
   `;
+  // Tip (FUERA del template):
+  root.innerHTML += tipHTML("🛈 Consejo: si dejas el nombre vacío te proponemos uno random; puedes cambiarlo reiniciando.");
+  wireTipToggle(root);
 
   const crestBox = root.querySelector("#crest-options");
   CRESTS.forEach(c=>{
@@ -154,39 +203,6 @@ function renderSetup(){
     renderDraft(); // Porteros
   };
 }
-// === Settings persistentes ===
-const SETTINGS_KEY = "barrio_settings_v1";
-let settings = loadSettings();
-
-function loadSettings(){
-  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || { introSeen:false, showTips:true }; }
-  catch{ return { introSeen:false, showTips:true }; }
-}
-function saveSettings(){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }
-
-// Componente tip (inline)
-function tipHTML(text){
-  if(!settings.showTips) return "";
-  return `<div class="tip" style="margin:8px 0; padding:8px 10px; border-left:4px solid #60a5fa; background:#eef6ff; border-radius:6px;">
-    ${text} ${tipToggleHTML()}
-  </div>`;
-}
-function tipToggleHTML(){
-  return `<label style="float:right; font-size:12px; opacity:.85;">
-    <input type="checkbox" id="tip-toggle" ${settings.showTips?'':'checked'} style="vertical-align:middle; margin-right:4px;">
-    No volver a mostrar
-  </label>`;
-}
-function wireTipToggle(root){
-  const t = root.querySelector("#tip-toggle");
-  if(!t) return;
-  t.addEventListener("change", ()=>{
-    settings.showTips = !t.checked; // checked = no mostrar
-    saveSettings();
-    // Si acaba de desactivar, oculta todos los tips visibles
-    root.querySelectorAll(".tip").forEach(el => el.style.display="none");
-  });
-}
 
 // --------- DRAFT: RONDA 1 (PORTERO 1 de 4) ---------
 function renderDraft(){
@@ -216,8 +232,6 @@ function renderDraft(){
       <button id="btn-next">Ir a la siguiente ronda ➡️</button>
     </div>
   `;
-  $next.insertAdjacentHTML("beforebegin", tipHTML("🛈 Consejo: el salario descuenta del presupuesto. Piensa en las rondas futuras."));
-  wireTipToggle(root);
 
   const $cards = root.querySelector("#cards");
   const $coins = root.querySelector("#coins");
@@ -225,6 +239,10 @@ function renderDraft(){
   const $btnCancel = root.querySelector("#btn-cancel");
   const $warn = root.querySelector("#warn");
   const $next = root.querySelector("#next");
+
+  // Tip (ahora que $next existe)
+  $next.insertAdjacentHTML("beforebegin", tipHTML("🛈 Consejo: el salario descuenta del presupuesto. Piensa en las rondas futuras."));
+  wireTipToggle(root);
 
   $cards.innerHTML = opcionesGK.map(p => playerCardHTML(p, false)).join("");
 
@@ -310,9 +328,7 @@ function renderDraftRoundMulti({
       <button id="btn-next">Siguiente ronda ➡️</button>
     </div>
   `;
-  $cards.insertAdjacentHTML("beforebegin", tipHTML("🛈 Consejo: puedes quitar una carta clicando de nuevo si te pasas del cupo."));
-  wireTipToggle(root);
-  
+
   const $cards = root.querySelector("#cards");
   const $coins = root.querySelector("#coins");
   const $picked = root.querySelector("#picked");
@@ -320,6 +336,10 @@ function renderDraftRoundMulti({
   const $btnCancel = root.querySelector("#btn-cancel");
   const $warn = root.querySelector("#warn");
   const $next = root.querySelector("#next");
+
+  // Tip (ahora que $cards existe)
+  $cards.insertAdjacentHTML("beforebegin", tipHTML("🛈 Consejo: puedes quitar una carta clicando de nuevo si te pasas del cupo."));
+  wireTipToggle(root);
 
   $cards.innerHTML = opciones.map(p => playerCardHTML(p, false)).join("");
 
@@ -426,9 +446,9 @@ function renderDraftDelantero(){
 // --------- RESUMEN + CLASIFICACIÓN ---------
 function renderClubSummary(){
   const root = document.getElementById("screen-club");
-   if(!root) throw new Error("Falta #screen-club");
+  if(!root) throw new Error("Falta #screen-club");
 
-    if (!career.league) {
+  if (!career.league) {
     career.league = createLeagueWithFixtures(career.teamName, RIVALS);
   }
 
@@ -485,15 +505,14 @@ function renderClubSummary(){
       <button id="btn-jugar-jornada">Jugar jornada ${career.league.jornada} ▶️</button>
       <button id="btn-rehacer">Rehacer draft 🔄</button>
     </div>
+    <div id="jornada-list" style="margin-top:8px; font-size:13px; opacity:.8;"></div>
   `;
-  const jornadaList = document.createElement("div");
-  jornadaList.id = "jornada-list";
-  jornadaList.style = "margin-top:8px; font-size:13px; opacity:.8;";
-  root.appendChild(jornadaList);
 
-  const matches = getRoundMatchesByFixtures(career.league);
+  // pinta la lista de la jornada actual (no duplicar)
+  const jornadaList = document.getElementById("jornada-list");
+  const matchesVista = getRoundMatchesByFixtures(career.league);
   jornadaList.innerHTML = `<strong>Jornada ${career.league.jornada}:</strong><br>` +
-    matches.map(m => `${m.home} vs ${m.away}`).join("<br>");
+    matchesVista.map(m => `${m.home} vs ${m.away}`).join("<br>");
 
   // Tip
   root.insertAdjacentHTML("beforeend", tipHTML("🛈 Consejo: se simulan todos los partidos. Tu potencia depende de tu plantilla."));
@@ -514,46 +533,53 @@ function renderClubSummary(){
   const btnJugar = root.querySelector("#btn-jugar-jornada");
   if (!btnJugar) return;
 
-  btnJugar.onclick = ()=>{
-  const matches = getRoundMatchesByFixtures(career.league);
-  const lista = matches.map(m => `${m.home} vs ${m.away}`).join("<br>");
-  root.insertAdjacentHTML("beforeend", `<div style="margin-top:8px; font-size:13px; opacity:.8;">
-  <strong>Jornada ${career.league.jornada}:</strong><br>${lista}
-</div>`);
-  const my = matches.find(m => m.home === career.teamName || m.away === career.teamName);
-  if(!my){ alert("¡Liga terminada!"); return; }
-
-  // Recalcula power de TU equipo (según plantilla)
-  const myRoster = career.plantilla.map(getPlayerById).filter(Boolean);
-  const myPower = teamPowerFromRoster(myRoster);
-  setUserPower(career.league, myPower);
-
-  // Construye equipos de tu partido
-  const soyLocal = (my.home === career.teamName);
-  const equipoT = { nombre: my.home, moral: 7, local: true,  jugadores: soyLocal ? myRoster : sampleRivalSquad() };
-  const equipoR = { nombre: my.away, moral: 5, local: false, jugadores: soyLocal ? sampleRivalSquad() : myRoster };
-
-  // Juega tu partido con el motor
-  const res = simularPartido(equipoT, equipoR, { N: 12, eventsDeck: DEFAULT_EVENTS });
-  updateTable(career.league, my.home, my.away, res.score);
-
-  // Simula el resto de partidos de la jornada (IA vs IA)
-  simulateAIRound(career.league, matches);
-
-  // Avanza y refresca
-  career.league.jornada++;
-  alert(`${my.home} ${res.score.home} - ${res.score.away} ${my.away}`);
-
-  document.getElementById("tabla-clasificacion").innerHTML = tableHTML();
-
+  // Deshabilita si ya terminó (por si recarga página)
   if (career.league.jornada > career.league.totalJornadas) {
     btnJugar.textContent = "Liga finalizada ✔️";
     btnJugar.disabled = true;
-  } else {
-    btnJugar.textContent = `Jugar jornada ${career.league.jornada} ▶️`;
   }
-};
 
+  btnJugar.onclick = ()=>{
+    const matches = getRoundMatchesByFixtures(career.league);
+    const my = matches.find(m => m.home === career.teamName || m.away === career.teamName);
+    if(!my){ alert("¡Liga terminada!"); return; }
+
+    // Recalcula power de TU equipo (según plantilla)
+    const myRoster = career.plantilla.map(getPlayerById).filter(Boolean);
+    const myPower = teamPowerFromRoster(myRoster);
+    setUserPower(career.league, myPower);
+
+    // Construye equipos de tu partido
+    const soyLocal = (my.home === career.teamName);
+    const equipoT = { nombre: my.home, moral: 7, local: true,  jugadores: soyLocal ? myRoster : sampleRivalSquad() };
+    const equipoR = { nombre: my.away, moral: 5, local: false, jugadores: soyLocal ? sampleRivalSquad() : myRoster };
+
+    // Juega tu partido con el motor
+    const res = simularPartido(equipoT, equipoR, { N: 12, eventsDeck: DEFAULT_EVENTS });
+    updateTable(career.league, my.home, my.away, res.score);
+
+    // Simula el resto de partidos de la jornada (IA vs IA)
+    simulateAIRound(career.league, matches);
+
+    // Avanza y refresca
+    career.league.jornada++;
+    alert(`${my.home} ${res.score.home} - ${res.score.away} ${my.away}`);
+
+    // refrescar tabla
+    document.getElementById("tabla-clasificacion").innerHTML = tableHTML();
+
+    // refrescar lista jornada siguiente
+    if (career.league.jornada <= career.league.totalJornadas) {
+      const nextMatches = getRoundMatchesByFixtures(career.league);
+      jornadaList.innerHTML = `<strong>Jornada ${career.league.jornada}:</strong><br>` +
+        nextMatches.map(m => `${m.home} vs ${m.away}`).join("<br>");
+      btnJugar.textContent = `Jugar jornada ${career.league.jornada} ▶️`;
+    } else {
+      jornadaList.innerHTML = `<strong>¡Liga finalizada!</strong>`;
+      btnJugar.textContent = "Liga finalizada ✔️";
+      btnJugar.disabled = true;
+    }
+  };
 
   // Escuadrón simple del rival
   function sampleRivalSquad(){
@@ -573,9 +599,3 @@ if (!settings.introSeen) {
   showScreen("screen-setup");
   renderSetup();
 }
-
-
-
-
-
-
