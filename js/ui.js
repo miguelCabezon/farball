@@ -589,7 +589,6 @@ function renderClubSummary(){
 
     // Avanza y refresca
     career.league.jornada++;
-    career.league.jornada++;
 
 // Modal con log de partido
 showMatchLogModal(my.home, my.away, res);
@@ -660,6 +659,7 @@ if (!settings.introSeen) {
   showScreen("screen-setup");
   renderSetup();
 }
+
 
 
 
