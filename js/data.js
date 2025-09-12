@@ -19,7 +19,6 @@ export const RIVALS = [
   "Yayo Vallecano",
   "Borrachos FC",
   "Los Cojos",
-  "Real Patadas",
 ];
 
 // ====== POOL DE JUGADORES (30) ======
@@ -188,3 +187,4 @@ export function simulateAIRound(league, matches){
     updateTable(league, m.home, m.away, score);
   });
 }
+
