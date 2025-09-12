@@ -101,7 +101,7 @@ function renderIntro(){
   const slides = [
     {
       title:"El presi te pasa el testigo",
-      body:"Chaval, me jubilo. Te dejo el club… poco presupuesto, campo con baches y deuda con El Tano. ¡Éxitos!",
+      body:"Chaval, un par de negocios me han salido regular y voy a pasar un tiempo en la sombra, te quedas a cargo del equipo",
       img:"assets/presi.png", // <-- tu dibujo del presi gordo corrupto 😄
       alt:"Presidente del club, traje arrugado y puro"
     },
@@ -625,5 +625,6 @@ if (!settings.introSeen) {
   showScreen("screen-setup");
   renderSetup();
 }
+
 
 
