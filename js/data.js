@@ -110,81 +110,65 @@ export function updateTable(league, home, away, score) {
   else { th.pe++; ta.pe++; th.pts++; ta.pts++; }
 }
 
-// === Emparejamientos jornada (usuario vs rival[j-1], resto se cruzan) ===
-export function getRoundMatches(league){
-  const { user, rivals, jornada } = league;
-  const idx = jornada - 1;
-  const matches = [];
-  const rival = rivals[idx % rivals.length];
-  matches.push({ home: user, away: rival });
-
-  const pool = rivals.filter(r => r !== rival);
-  // shuffle determinista por jornada
-  let seed = 1234 + jornada * 777;
-  function rand(){ seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 2**32; }
-  for(let i=pool.length-1;i>0;i--){
-    const j = Math.floor(rand()*(i+1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
+// Crea liga con FIXTURES de 1 vuelta (cada equipo se enfrenta 1 vez)
+export function createLeagueWithFixtures(userTeamName, rivals) {
+  const teamsNames = [userTeamName, ...rivals];
+  if (teamsNames.length % 2 !== 0) {
+    throw new Error("Número de equipos impar. Quita o añade uno para que sea par.");
   }
-  for(let i=0;i<pool.length;i+=2){
-    if(pool[i+1]) matches.push({ home: pool[i], away: pool[i+1] });
+  const teams = teamsNames.map(n => ({
+    name: n, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0
+  }));
+
+  // potencia base IA
+  const power = {};
+  teamsNames.forEach(n => power[n] = 0.85 + Math.random()*0.30);
+
+  const fixtures = generateRoundRobinOnce(teamsNames); // array de jornadas [{home, away}...]
+
+  return {
+    user: userTeamName,
+    teams,
+    power,
+    fixtures,    // lista plana de partidos (1 vuelta)
+    jornada: 1,
+    totalJornadas: fixtures.length / (teamsNames.length/2)
+  };
+}
+
+// Genera round-robin 1 vuelta (método del círculo, sin ida/vuelta)
+export function generateRoundRobinOnce(teamNames) {
+  const n = teamNames.length;
+  const half = n / 2;
+  let arr = [...teamNames];
+  const rounds = n - 1;
+  const fixtures = [];
+
+  for (let r = 0; r < rounds; r++) {
+    for (let i = 0; i < half; i++) {
+      const t1 = arr[i];
+      const t2 = arr[n - 1 - i];
+      // Alterna localía para que el user no sea siempre local
+      const home = (r % 2 === 0) ? t1 : t2;
+      const away = (r % 2 === 0) ? t2 : t1;
+      fixtures.push({ round: r + 1, home, away });
+    }
+    // rotación (mantén arr[0] fijo)
+    const fixed = arr[0];
+    const rest = arr.slice(1);
+    rest.unshift(rest.pop());
+    arr = [fixed, ...rest];
   }
-  return matches;
+  return fixtures;
 }
 
-// === Simulación IA con power (logit simple + goles razonables) ===
-function outcomeFromPower(ph, pa){
-  const k = 2.2;                         // sensibilidad (sube/baja para más/menos favoritismo)
-  const pHomeWin = 1/(1 + Math.pow(10, -k*(ph - pa))); // 0..1
-  // Partimos de un 22% de empate y lo ajustamos levemente por equilibrio
-  let pDraw = 0.22 * (1 - Math.min(0.5, Math.abs(ph - pa))); // más empate si están igualados
-  pDraw = Math.max(0.12, Math.min(0.28, pDraw));
-  const pAwayWin = 1 - pHomeWin - pDraw;
-
-  const r = Math.random();
-  if (r < pHomeWin) return "H";
-  if (r < pHomeWin + pDraw) return "D";
-  return "A";
+// Devuelve los partidos de una jornada concreta a partir de fixtures
+export function getRoundMatchesByFixtures(league) {
+  const { jornada, fixtures } = league;
+  return fixtures.filter(f => f.round === jornada);
 }
 
-function goalsFromOutcome(outcome, ph, pa){
-  // Medias base con sesgo local y poder
-  const baseH = 1.25 * ph / (0.9 + 0.2*pa);
-  const baseA = 1.05 * pa / (0.95 + 0.2*ph);
+// Mantén updateTable y standingsSorted como ya los tienes.
 
-  function sample(mu){
-    // discretización simple tipo Poisson-like
-    const t = [
-      {g:0,p: Math.max(0.10, 0.55 - mu*0.25)},
-      {g:1,p: Math.min(0.50, 0.30 + mu*0.20)},
-      {g:2,p: Math.min(0.30, 0.12 + mu*0.15)},
-      {g:3,p: Math.min(0.15, 0.06 + mu*0.08)},
-      {g:4,p: 1.00},
-    ];
-    let r = Math.random(), acc = 0;
-    for(const it of t){ acc += it.p; if(r <= acc) return it.g; }
-    return 0;
-  }
 
-  let gh = sample(baseH), ga = sample(baseA);
-
-  // Corrige para respetar el outcome deseado
-  if (outcome === "H" && gh <= ga) gh = Math.max(ga+1, gh+1);
-  if (outcome === "A" && ga <= gh) ga = Math.max(gh+1, ga+1);
-  if (outcome === "D") { const m = Math.max(0, Math.min(3, Math.round((gh+ga)/2))); gh = ga = m; }
-
-  return { home: gh, away: ga };
-}
-
-export function simulateAIRound(league, matches){
-  matches.forEach(m => {
-    if(m.home === league.user || m.away === league.user) return; // el del user lo maneja UI
-    const ph = league.power[m.home] ?? 1.0;
-    const pa = league.power[m.away] ?? 1.0;
-
-    const outcome = outcomeFromPower(ph, pa);
-    const score = goalsFromOutcome(outcome, ph, pa);
-    updateTable(league, m.home, m.away, score);
-  });
-}
 
