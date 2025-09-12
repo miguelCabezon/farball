@@ -589,7 +589,12 @@ function renderClubSummary(){
 
     // Avanza y refresca
     career.league.jornada++;
-    alert(`${my.home} ${res.score.home} - ${res.score.away} ${my.away}`);
+    career.league.jornada++;
+
+// Modal con log de partido
+showMatchLogModal(my.home, my.away, res);
+
+document.getElementById("tabla-clasificacion").innerHTML = tableHTML();;
 
     // refrescar tabla
     document.getElementById("tabla-clasificacion").innerHTML = tableHTML();
@@ -616,6 +621,36 @@ function renderClubSummary(){
     return [...gk, ...dfs, ...mfs, ...atk];
   }
 }
+function showMatchLogModal(home, away, res){
+  // crea contenedor
+  let m = document.getElementById("match-modal");
+  if(!m){
+    m = document.createElement("div");
+    m.id = "match-modal";
+    m.style = `
+      position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:9999;
+    `;
+    document.body.appendChild(m);
+  }
+  const score = `${res.score.home} - ${res.score.away}`;
+  const html = `
+    <div style="background:#fff; width:min(720px,90vw); max-height:80vh; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.2); display:flex; flex-direction:column;">
+      <div style="padding:12px 16px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:12px;">
+        <strong>${home}</strong> <span>vs</span> <strong>${away}</strong>
+        <span style="margin-left:auto; font-weight:700;">${score}</span>
+      </div>
+      <div style="padding:12px 16px; overflow:auto; line-height:1.5; font-size:14px;">
+        ${res.log.map(line => `<div>${line}</div>`).join("")}
+      </div>
+      <div style="padding:12px 16px; border-top:1px solid #eee; display:flex; justify-content:flex-end;">
+        <button id="match-close">Cerrar</button>
+      </div>
+    </div>
+  `;
+  m.innerHTML = html;
+  m.onclick = (e)=>{ if(e.target === m){ m.remove(); } };
+  m.querySelector("#match-close").onclick = ()=> m.remove();
+}
 
 // --------- ARRANQUE ---------
 if (!settings.introSeen) {
@@ -625,6 +660,7 @@ if (!settings.introSeen) {
   showScreen("screen-setup");
   renderSetup();
 }
+
 
 
 
