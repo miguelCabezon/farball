@@ -1,203 +1,207 @@
-// js/engine.js — Motor de simulación de partido (ESM)
+// js/engine.js — motor de partido con log + eventos automáticos
 
-// ---------- Utilidades ----------
-const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
-const rnd = () => Math.random();
+// =========================
+// Helpers y utilidades
+// =========================
+function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
 
-// ---------- Ratings por rol ----------
-function rolATK(j){ return 0.6*j.tecnica + 0.4*j.velocidad - 0.3*(j.resaca||0); }
-function rolMID(j){ return 0.5*j.tecnica + 0.3*j.velocidad + 0.2*(j.carisma||0) - 0.2*(j.resaca||0); }
-function rolDEF(j){ return 0.5*j.fuerza  + 0.3*j.velocidad + 0.2*j.tecnica      - 0.2*(j.resaca||0); }
-function rolGK (j){ return 0.7*(j.reflejos||0) + 0.3*(j.carisma||0) - 0.3*(j.resaca||0); }
-
-// ---------- Agregados de equipo ----------
-export function ratingEquipo(equipo){
-  const ATKs = equipo.jugadores.filter(j=>j.rol==="ATK").map(rolATK).sort((a,b)=>b-a);
-  const DEFs = equipo.jugadores.filter(j=>j.rol==="DEF").map(rolDEF).sort((a,b)=>b-a);
-  const MIDs = equipo.jugadores.filter(j=>j.rol==="MID").map(rolMID);
-  const gk  = equipo.jugadores.find(j=>j.rol==="GK");
-  const GK  = gk ? rolGK(gk) : 0;
-
-  const top2 = arr => {
-    if(arr.length===0) return 0;
-    if(arr.length===1) return arr[0];
-    return (arr[0] + arr[1]) / 2;
-  };
-
-  const A = top2(ATKs) + 0.3 * (MIDs.length ? (MIDs.reduce((a,b)=>a+b,0)/MIDs.length) : 0);
-  const D = top2(DEFs) + 0.4 * GK;
-
-  return { A, D, GK };
+// Saca stats de un jugador con defaults "de barrio"
+function stat(j, key, def=10){
+  // permitimos tanto j[key] numérico como algo por 'tier'
+  if (typeof j[key] === "number") return j[key];
+  if (typeof j.tier === "number"){
+    // tier 1..5 ~ 6..14 (aprox)
+    return clamp(6 + (j.tier-1)*2, 4, 18);
+  }
+  return def;
 }
 
-const moralMul = m => 1 + (m - 5) * 0.04;
-const homeMul  = isHome => isHome ? 1.05 : 1.00;
+// Calcula rating de equipo a partir de la plantilla.
+// Devuelve A (ataque), D (defensa) y GK (portero) en escala ~0..20.
+export function ratingEquipo({ jugadores }){
+  // Si faltan roles, hacemos medias razonables con lo que haya.
+  const gk  = jugadores.filter(j => j.rol === "GK");
+  const dfs = jugadores.filter(j => j.rol === "DEF");
+  const mfs = jugadores.filter(j => j.rol === "MID");
+  const atks= jugadores.filter(j => j.rol === "ATK");
 
-// ---------- Eventos por defecto (opcional) ----------
-export const DEFAULT_EVENTS = [
-  { id:"perro",       name:"Perro en el campo",     effect:"swap_possession_next" },
-  { id:"condicional", name:"Condicional",           effect:"def_down_team", team:"T", factor:0.85, duration:"full" },
-  { id:"mafia",       name:"Llamada de la mafia",   effect:"goal_bribe_team", team:"T" },
-  { id:"resacaGK",    name:"Portero rival de resaca", effect:"gk_down_team", team:"R", ticks:4, factor:0.8 },
-  { id:"feria",       name:"Feria sobre el campo",  effect:"reduce_plays", amount:2 },
-  { id:"arbitro",     name:"Árbitro primo",         effect:"boost_conv_once", team:"T", amount:0.10 },
-];
+  // Portero: si no hay, inventamos uno modesto
+  const gkVal = gk.length ? stat(gk[0], "gk", 10) : 8;
 
-// ---------- Narración simple ----------
-function lineJug(lado, conv, gol, i){
-  return `Jugada ${i}: ataca ${lado}. Conv=${(conv*100).toFixed(1)}% → ${gol ? "¡GOL!" : "nada..."}`;
+  // Defensa = DEFs + parte de MIDs
+  const defBase = avg(dfs.map(j => stat(j, "def", 10)));
+  const midDef  = avg(mfs.map(j => stat(j, "def", 10)));
+  const D = clamp((defBase*0.7 + midDef*0.3) || 9, 4, 20);
+
+  // Ataque = ATKs + parte de MIDs
+  const atkBase = avg(atks.map(j => stat(j, "atk", 10)));
+  const midAtk  = avg(mfs.map(j => stat(j, "atk", 10)));
+  const A = clamp((atkBase*0.7 + midAtk*0.3) || 9, 4, 20);
+
+  return { A, D, GK: clamp(gkVal, 4, 20) };
 }
 
-// ---------- Simulación principal ----------
-/**
- * Simula un partido.
- * @param {Object} teamT  - { nombre, moral (0-10), local (bool), jugadores: [...] }
- * @param {Object} teamR  - igual que teamT
- * @param {Object} options - { N=12, baseConv=0.18, eventsDeck=DEFAULT_EVENTS, eventsEvery=3 }
- * @returns {Object} { score:{home, away}, log:[...], stats:{shotsT,shotsR,convT,convR}, eventsUsed:[...] }
- */
-export function simularPartido(teamT, teamR, options={}){
-  const N          = options.N ?? 12;           // nº de jugadas totales
-  const baseConv   = options.baseConv ?? 0.18;  // conversión base por ocasión
-  const deck       = options.eventsDeck ?? DEFAULT_EVENTS;
-  const eventsEvery= options.eventsEvery ?? 3;  // carta cada X jugadas
+function avg(arr){
+  if(!arr || !arr.length) return 0;
+  return arr.reduce((a,b)=>a+b,0)/arr.length;
+}
+
+// Potencia ~1.0 basada en A/D de la plantilla (para IA y simulación global)
+export function teamPowerFromRoster(jugadores){
+  const { A, D } = ratingEquipo({ jugadores });
+  let base = 0.6 * A + 0.4 * D;     // mezcla con ligero sesgo a ataque
+  let power = base / 10;            // normaliza a ~1.0
+  return clamp(power, 0.75, 1.25);  // limita rango razonable
+}
+
+// =========================
+// Eventos automáticos (sin decisión)
+// =========================
+export const AUTO_EVENTS = {
+  condicional: {
+    chance: 0.10, // 10% de saltar una vez (seed)
+    apply(state, side, log){
+      // side = "local" | "visitante" => baja defensa resto de partido
+      const tag = side === "local" ? "LOCAL" : "VIS";
+      state.modifiers[side].def -= 0.12; // -12% defensa
+      log.push(`🚨 (${tag}) La poli se lleva a un defensa (−DEF todo el partido)`);
+    }
+  },
+  resacoso: {
+    chance: 0.15,
+    apply(state, side, log){
+      state.modifiers[side].convNext += -0.12; // próxima ocasión -12%
+      const tag = side === "local" ? "LOCAL" : "VIS";
+      log.push(`🥴 (${tag}) Resacoso: la próxima ocasión baja la puntería`);
+    }
+  },
+  felino: {
+    chance: 0.12,
+    apply(state, side, log){
+      // mejora al portero de este side vs próxima ocasión rival
+      const other = side === "local" ? "visitante" : "local";
+      state.modifiers[other].convNext += -0.10;
+      const tag = side === "local" ? "LOCAL" : "VIS";
+      log.push(`🐈 (${tag}) Portero felino: la próxima al rival le costará marcar`);
+    }
+  },
+  zorro: {
+    chance: 0.10,
+    apply(state, side, log){
+      // próxima ocasión propia con +conv
+      state.modifiers[side].convNext += 0.10;
+      const tag = side === "local" ? "LOCAL" : "VIS";
+      log.push(`🦊 (${tag}) Pillería: próxima ocasión con más picardía`);
+    }
+  },
+};
+
+// Alias para no romper tus imports actuales
+export const DEFAULT_EVENTS = AUTO_EVENTS;
+
+// =========================
+// Motor principal
+// =========================
+export function simularPartido(teamLocal, teamVisitante, opts){
+  const N = opts?.N ?? 12;
+  const deck = opts?.eventsDeck ?? DEFAULT_EVENTS;
+
   const log = [];
-  const eventsUsed = [];
+  // Ratings iniciales
+  const rL = ratingEquipo(teamLocal);
+  const rV = ratingEquipo(teamVisitante);
+  log.push(`📊 Ratings — LOCAL A:${rL.A.toFixed(1)} D:${rL.D.toFixed(1)} GK:${rL.GK.toFixed(1)} | ` +
+           `VIS A:${rV.A.toFixed(1)} D:${rV.D.toFixed(1)} GK:${rV.GK.toFixed(1)}`);
 
-  // Estado de efectos
-  let boostConvOnce_T = 0;     // del árbitro primo (T)
-  let swapNext = false;        // perro en el campo
-  let gkDown_R_ticks = 0, gkDown_R_factor = 1.0; // resaca GK rival
-  let defDown_T_factor = 1.0;  // condicional en defensa T
-  let playsLeft = N;
-
-  // Marcador y contadores
-  let golesT = 0, golesR = 0;
-  let shotsT = 0, shotsR = 0;
-
-  // Funciones internas
-  const calcRatings = () => {
-    const RT = ratingEquipo(teamT);
-    const RR = ratingEquipo(teamR);
-
-    let A_T = RT.A, D_T = RT.D, GK_T = RT.GK;
-    let A_R = RR.A, D_R = RR.D, GK_R = RR.GK;
-
-    const mulT = moralMul(teamT.moral ?? 5) * homeMul(!!teamT.local);
-    const mulR = moralMul(teamR.moral ?? 5) * homeMul(!!teamR.local);
-
-    A_T *= mulT; D_T *= mulT;
-    A_R *= mulR; D_R *= mulR;
-
-    // Efectos activos
-    D_T *= defDown_T_factor;
-    GK_R *= gkDown_R_factor;
-
-    return { A_T, D_T, GK_T, A_R, D_R, GK_R };
-  };
-
-  const robarEvento = () => {
-    if(!deck || deck.length===0) return;
-    const carta = deck[Math.floor(rnd()*deck.length)];
-    eventsUsed.push(carta.id);
-
-    switch(carta.effect){
-      case "swap_possession_next":
-        swapNext = true;
-        log.push("🟡 Evento: Perro en el campo — La siguiente jugada cambia de posesión.");
-        break;
-      case "def_down_team":
-        if(carta.team==="T"){
-          defDown_T_factor = Math.min(defDown_T_factor, carta.factor ?? 0.85);
-          log.push("🟡 Evento: Condicional — Baja tu defensa para el resto del partido.");
-        }
-        break;
-      case "goal_bribe_team":
-        if(carta.team==="T"){
-          golesT++;
-          log.push("🟡 Evento: Llamada de la mafia — Aceptas el 'trato'. +1 gol (la moral ya si eso…).");
-        }
-        break;
-      case "gk_down_team":
-        if(carta.team==="R"){
-          gkDown_R_ticks  = carta.ticks ?? 4;
-          gkDown_R_factor = carta.factor ?? 0.8;
-          log.push("🟡 Evento: Portero rival de resaca — GK rival reducido por 4 jugadas.");
-        }
-        break;
-      case "reduce_plays":
-        const amt = carta.amount ?? 2;
-        playsLeft = Math.max(6, playsLeft - amt);
-        log.push("🟡 Evento: Feria — Se reducen las jugadas totales.");
-        break;
-      case "boost_conv_once":
-        if(carta.team==="T"){
-          boostConvOnce_T += (carta.amount ?? 0.10);
-          log.push("🟡 Evento: Árbitro primo — Próxima ocasión a favor mejora la conversión.");
-        }
-        break;
+  // Estado vivo
+  const state = {
+    teamL: teamLocal,
+    teamV: teamVisitante,
+    score: { home:0, away:0 },
+    modifiers: {
+      local:     { def:0, convNext:0 },
+      visitante: { def:0, convNext:0 },
     }
   };
+
+  // Semilla de eventos (0–2 por equipo, no repite tipo)
+  seedAutoEvents(state, deck, log);
 
   // Bucle de jugadas
-  for(let i=1; i<=playsLeft; i++){
-    // Cada X jugadas, evento
-    if(((i-1) % eventsEvery) === 0) robarEvento();
+  for(let i=1; i<=N; i++){
+    const { pL, pV } = probOcasion(rL, rV, state);
+    // quién ataca esta jugada
+    const atacanLocal = Math.random() < (pL / (pL + pV));
+    const tag = atacanLocal ? "LOCAL" : "VIS";
+    log.push(`▶️ Jugada ${i}: ataca ${tag}`);
 
-    const { A_T, D_T, GK_T, A_R, D_R, GK_R } = calcRatings();
-
-    // ¿Quién ataca?
-    let pT = clamp(0.50 + 0.04 * ((A_T - D_R)/5), 0.20, 0.80);
-    let atacante = (rnd() < pT) ? "T" : "R";
-    if(swapNext){ atacante = atacante==="T" ? "R" : "T"; swapNext = false; }
-
-    // Conversión a gol
-    let conv;
-    if(atacante==="T"){
-      conv = baseConv + 0.02 * clamp((A_T - D_R)/5, -3, 3) - 0.01 * clamp((GK_R)/2, 0, 4);
-      conv += boostConvOnce_T; // se consume solo si hay ocasión
-      boostConvOnce_T = 0;
-      shotsT++;
+    // ¿ocasion clara?
+    const pO = atacanLocal ? pL : pV;
+    if (Math.random() < pO){
+      // prob de convertir (consume convNext del que ataca)
+      const pC = probConversion(atacanLocal, rL, rV, state);
+      if (Math.random() < pC){
+        if (atacanLocal){
+          state.score.home++;
+        } else {
+          state.score.away++;
+        }
+        log.push(`⚽ ¡Gol ${tag}! (${state.score.home}-${state.score.away})`);
+      } else {
+        log.push(`❌ Ocasión fallida (${tag})`);
+      }
     } else {
-      conv = baseConv + 0.02 * clamp((A_R - D_T)/5, -3, 3) - 0.01 * clamp((GK_T)/2, 0, 4);
-      shotsR++;
-    }
-    conv = clamp(conv, 0.05, 0.45);
-
-    const gol = rnd() < conv;
-    const lado = atacante==="T" ? (teamT.nombre || "Local") : (teamR.nombre || "Visitante");
-    log.push(lineJug(lado, conv, gol, i));
-
-    if(gol){
-      if(atacante==="T") golesT++; else golesR++;
-    }
-
-    // Tick de efectos con duración
-    if(gkDown_R_ticks>0){
-      gkDown_R_ticks--;
-      if(gkDown_R_ticks===0) gkDown_R_factor = 1.0;
+      log.push(`⛔ Jugada sin peligro`);
     }
   }
 
-  log.push(`\n🧾 FINAL: ${teamT.nombre || "Local"} ${golesT} - ${golesR} ${teamR.nombre || "Visitante"}`);
-
-  const convT = shotsT ? golesT/shotsT : 0;
-  const convR = shotsR ? golesR/shotsR : 0;
-
-  return {
-    score: { home: golesT, away: golesR },
-    log,
-    stats: { shotsT, shotsR, convT, convR },
-    eventsUsed
-  };
+  return { score: state.score, log };
 }
-export function teamPowerFromRoster(jugadores){
-  const { A, D } = ratingEquipo({ jugadores });
-  // mezcla simple: ataque pesa algo más que defensa
-  let base = 0.6 * A + 0.4 * D;         // ~ escala 0..20 aprox según tus fórmulas
-  let power = base / 10;                 // ~ normaliza a ~1.0
-  power = Math.max(0.75, Math.min(1.25, power)); // acota
-  return power;
+
+// =========================
+// Internas del motor
+// =========================
+function seedAutoEvents(state, deck, log){
+  const tipos = Object.keys(deck);
+  ["local","visitante"].forEach(side=>{
+    let pool = [...tipos];
+    const seeds = 1 + (Math.random() < 0.35 ? 1 : 0); // 1 o 2 eventos
+    for(let k=0;k<seeds;k++){
+      if(!pool.length) break;
+      const idx = Math.floor(Math.random()*pool.length);
+      const key = pool.splice(idx,1)[0];
+      const ev = deck[key];
+      if (Math.random() < ev.chance){
+        try { ev.apply(state, side, log); } catch(e){ /* ignora errores de evento */ }
+      }
+    }
+  });
 }
+
+// Probabilidad de que haya ocasión para cada equipo en esta jugada
+function probOcasion(rL, rV, state){
+  // Defensa ajustada por modificadores persistentes (def puede ser negativa → clamp abajo)
+  const defL = clamp(rL.D + (state.modifiers.local.def*20), 2, 24);
+  const defV = clamp(rV.D + (state.modifiers.visitante.def*20), 2, 24);
+
+  // Base 0.5 + sesgo por (Ataque - Defensa rival) reescalado
+  const pL = clamp(0.50 + 0.30 * (rL.A - defV) / 20, 0.15, 0.85);
+  const pV = clamp(0.50 + 0.30 * (rV.A - defL) / 20, 0.15, 0.85);
+  return { pL, pV };
+}
+
+// Probabilidad de convertir una ocasión (consumiendo convNext del que ataca)
+function probConversion(forLocal, rL, rV, state){
+  const base = forLocal ? 0.28 : 0.26;   // local un poco más
+  const gk   = forLocal ? rV.GK : rL.GK; // portero rival
+  const adjGK = -0.20 * (gk - 10) / 10;  // GK alto reduce conversión
+
+  const sideKey = forLocal ? "local" : "visitante";
+  const bonus = state.modifiers[sideKey].convNext || 0;
+  state.modifiers[sideKey].convNext = 0; // consumir
+
+  return clamp(base + adjGK + bonus, 0.06, 0.52);
+}
+
 
 
