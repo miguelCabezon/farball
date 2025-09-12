@@ -652,13 +652,9 @@ function showMatchLogModal(home, away, res){
 }
 
 // --------- ARRANQUE ---------
-if (!settings.introSeen) {
-  showScreen("screen-intro");
-  renderIntro();
-} else {
-  showScreen("screen-setup");
-  renderSetup();
-}
+showScreen("screen-intro");
+renderIntro();
+
 
 
 
