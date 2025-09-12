@@ -432,6 +432,10 @@ function renderClubSummary(){
 
   btnJugar.onclick = ()=>{
   const matches = getRoundMatchesByFixtures(career.league);
+  const lista = matches.map(m => `${m.home} vs ${m.away}`).join("<br>");
+  root.insertAdjacentHTML("beforeend", `<div style="margin-top:8px; font-size:13px; opacity:.8;">
+  <strong>Jornada ${career.league.jornada}:</strong><br>${lista}
+</div>`);
   const my = matches.find(m => m.home === career.teamName || m.away === career.teamName);
   if(!my){ alert("¡Liga terminada!"); return; }
 
@@ -480,6 +484,7 @@ function renderClubSummary(){
 // --------- ARRANQUE ---------
 showScreen("screen-setup");
 renderSetup();
+
 
 
 
