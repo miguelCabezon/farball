@@ -64,7 +64,7 @@ export const AUTO_EVENTS = {
       // side = "local" | "visitante" => baja defensa resto de partido
       const tag = side === "local" ? "LOCAL" : "VIS";
       state.modifiers[side].def -= 0.12; // -12% defensa
-      log.push(`🚨 (${tag}) La poli se lleva a un defensa (−DEF todo el partido)`);
+      log.push(`🚨 (${tag}) La policía aparece y se lleva a tu defensa, dicen que no se qué de una estafa piramidal`);
     }
   },
   resacoso: {
@@ -72,7 +72,7 @@ export const AUTO_EVENTS = {
     apply(state, side, log){
       state.modifiers[side].convNext += -0.12; // próxima ocasión -12%
       const tag = side === "local" ? "LOCAL" : "VIS";
-      log.push(`🥴 (${tag}) Resacoso: la próxima ocasión baja la puntería`);
+      log.push(`🥴 (${tag}) Resacoso, tu jugador se pone a vomitar de la resaca, te dice que son 5 minutos y está fino`);
     }
   },
   felino: {
@@ -82,7 +82,7 @@ export const AUTO_EVENTS = {
       const other = side === "local" ? "visitante" : "local";
       state.modifiers[other].convNext += -0.10;
       const tag = side === "local" ? "LOCAL" : "VIS";
-      log.push(`🐈 (${tag}) Portero felino: la próxima al rival le costará marcar`);
+      log.push(`🐈 (${tag}) Las anfetas que se ha tomado tu portero le están dando unos reflejos felinos`);
     }
   },
   zorro: {
@@ -202,6 +202,7 @@ function probConversion(forLocal, rL, rV, state){
 
   return clamp(base + adjGK + bonus, 0.06, 0.52);
 }
+
 
 
 
