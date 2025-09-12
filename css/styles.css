@@ -34,3 +34,5 @@ button.ghost{ background: transparent; border-color: #ccd; }
   .intro-wrap{ flex-direction: column; text-align: center; }
   .intro-ill img{ width: 60vw; max-width: 320px; }
 }
+#match-modal button { padding:8px 12px; border-radius:10px; border:1px solid #cfd8ff; background:#f6f8ff; cursor:pointer; }
+#match-modal strong { color:#0f172a; }
