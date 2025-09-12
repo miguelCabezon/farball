@@ -28,6 +28,40 @@ export const career = {
 };
 
 // --------- HELPERS ---------
+
+// === Settings persistentes ===
+const SETTINGS_KEY = "barrio_settings_v1";
+let settings = loadSettings();
+
+function loadSettings(){
+  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || { introSeen:false, showTips:true }; }
+  catch{ return { introSeen:false, showTips:true }; }
+}
+function saveSettings(){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }
+
+// Componente tip (inline)
+function tipHTML(text){
+  if(!settings.showTips) return "";
+  return `<div class="tip" style="margin:8px 0; padding:8px 10px; border-left:4px solid #60a5fa; background:#eef6ff; border-radius:6px;">
+    ${text} ${tipToggleHTML()}
+  </div>`;
+}
+function tipToggleHTML(){
+  return `<label style="float:right; font-size:12px; opacity:.85;">
+    <input type="checkbox" id="tip-toggle" ${settings.showTips?'':'checked'} style="vertical-align:middle; margin-right:4px;">
+    No volver a mostrar
+  </label>`;
+}
+function wireTipToggle(root){
+  const t = root.querySelector("#tip-toggle");
+  if(!t) return;
+  t.addEventListener("change", ()=>{
+    settings.showTips = !t.checked; // checked = no mostrar
+    saveSettings();
+    // Si acaba de desactivar, oculta todos los tips visibles
+    root.querySelectorAll(".tip").forEach(el => el.style.display="none");
+  });
+}
 function showScreen(id){
   document.querySelectorAll("[id^='screen-']").forEach(d => d.style.display = "none");
   const el = document.getElementById(id);
@@ -75,6 +109,8 @@ function renderSetup(){
     </div>
     <div id="crest-options" style="display:flex; gap:12px; flex-wrap:wrap; margin:1em 0;"></div>
     <button id="btn-continue" disabled>Continuar ➡️</button>
+      root.innerHTML += tipHTML("🛈 Consejo: si dejas el nombre vacío te proponemos uno random; puedes cambiarlo reiniciando.");
+      wireTipToggle(root);
   `;
 
   const crestBox = root.querySelector("#crest-options");
@@ -118,6 +154,39 @@ function renderSetup(){
     renderDraft(); // Porteros
   };
 }
+// === Settings persistentes ===
+const SETTINGS_KEY = "barrio_settings_v1";
+let settings = loadSettings();
+
+function loadSettings(){
+  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || { introSeen:false, showTips:true }; }
+  catch{ return { introSeen:false, showTips:true }; }
+}
+function saveSettings(){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }
+
+// Componente tip (inline)
+function tipHTML(text){
+  if(!settings.showTips) return "";
+  return `<div class="tip" style="margin:8px 0; padding:8px 10px; border-left:4px solid #60a5fa; background:#eef6ff; border-radius:6px;">
+    ${text} ${tipToggleHTML()}
+  </div>`;
+}
+function tipToggleHTML(){
+  return `<label style="float:right; font-size:12px; opacity:.85;">
+    <input type="checkbox" id="tip-toggle" ${settings.showTips?'':'checked'} style="vertical-align:middle; margin-right:4px;">
+    No volver a mostrar
+  </label>`;
+}
+function wireTipToggle(root){
+  const t = root.querySelector("#tip-toggle");
+  if(!t) return;
+  t.addEventListener("change", ()=>{
+    settings.showTips = !t.checked; // checked = no mostrar
+    saveSettings();
+    // Si acaba de desactivar, oculta todos los tips visibles
+    root.querySelectorAll(".tip").forEach(el => el.style.display="none");
+  });
+}
 
 // --------- DRAFT: RONDA 1 (PORTERO 1 de 4) ---------
 function renderDraft(){
@@ -147,6 +216,8 @@ function renderDraft(){
       <button id="btn-next">Ir a la siguiente ronda ➡️</button>
     </div>
   `;
+  $next.insertAdjacentHTML("beforebegin", tipHTML("🛈 Consejo: el salario descuenta del presupuesto. Piensa en las rondas futuras."));
+  wireTipToggle(root);
 
   const $cards = root.querySelector("#cards");
   const $coins = root.querySelector("#coins");
@@ -239,7 +310,9 @@ function renderDraftRoundMulti({
       <button id="btn-next">Siguiente ronda ➡️</button>
     </div>
   `;
-
+  $cards.insertAdjacentHTML("beforebegin", tipHTML("🛈 Consejo: puedes quitar una carta clicando de nuevo si te pasas del cupo."));
+  wireTipToggle(root);
+  
   const $cards = root.querySelector("#cards");
   const $coins = root.querySelector("#coins");
   const $picked = root.querySelector("#picked");
@@ -413,6 +486,18 @@ function renderClubSummary(){
       <button id="btn-rehacer">Rehacer draft 🔄</button>
     </div>
   `;
+  const jornadaList = document.createElement("div");
+  jornadaList.id = "jornada-list";
+  jornadaList.style = "margin-top:8px; font-size:13px; opacity:.8;";
+  root.appendChild(jornadaList);
+
+  const matches = getRoundMatchesByFixtures(career.league);
+  jornadaList.innerHTML = `<strong>Jornada ${career.league.jornada}:</strong><br>` +
+    matches.map(m => `${m.home} vs ${m.away}`).join("<br>");
+
+  // Tip
+  root.insertAdjacentHTML("beforeend", tipHTML("🛈 Consejo: se simulan todos los partidos. Tu potencia depende de tu plantilla."));
+  wireTipToggle(root);
 
   // Handlers
   const btnRehacer = root.querySelector("#btn-rehacer");
@@ -481,8 +566,14 @@ function renderClubSummary(){
 }
 
 // --------- ARRANQUE ---------
-showScreen("screen-setup");
-renderSetup();
+if (!settings.introSeen) {
+  showScreen("screen-intro");
+  renderIntro();
+} else {
+  showScreen("screen-setup");
+  renderSetup();
+}
+
 
 
 
