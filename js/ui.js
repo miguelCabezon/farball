@@ -6,16 +6,15 @@ import {
   sampleForRole,
   jugadoresPool,
   RIVALS,
-  createLeague,
   updateTable,
   standingsSorted,
-  getRoundMatches,
   simulateAIRound,
-  setUserPower
+  setUserPower,
+  createLeagueWithFixtures,
+  getRoundMatchesByFixtures
 } from './data.js';
 
 import { simularPartido, DEFAULT_EVENTS, teamPowerFromRoster } from './engine.js';
-import { createLeagueWithFixtures, getRoundMatchesByFixtures } from './data.js';
 
 
 // --------- ESTADO GLOBAL ---------
@@ -484,6 +483,7 @@ function renderClubSummary(){
 // --------- ARRANQUE ---------
 showScreen("screen-setup");
 renderSetup();
+
 
 
 
