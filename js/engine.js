@@ -116,6 +116,8 @@ export function simulateMatch(teamHome, teamAway, opts) {
 
   const log = [];
   // Ratings iniciales
+  console.log("team casa:", teamHome);
+  console.log("team fuera:", teamAway);
   const rL = teamRating(teamHome);
   const rV = teamRating(teamAway);
   log.push(
