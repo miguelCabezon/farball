@@ -1,0 +1,96 @@
+:root {
+  --primary: #89CFF0;
+}
+
+body {
+  accent-color: var(--primary);
+}
+
+.button,
+button {
+  border-color: var(--primary);
+}
+
+.badge-primary {
+  background: var(--primary);
+  color: #0b2540;
+  /* contraste suave */
+}
+
+button {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #cfd8ff;
+  background: #f6f8ff;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+h1,
+h2,
+h3 {
+  color: #0f172a;
+}
+
+.intro-wrap {
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.intro-ill img {
+  width: 220px;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .10);
+}
+
+.intro-copy h1 {
+  margin: 0 0 6px;
+}
+
+.intro-copy p {
+  margin: 0 0 12px;
+  opacity: .9;
+}
+
+.intro-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+button.ghost {
+  background: transparent;
+  border-color: #ccd;
+}
+
+@media (max-width: 720px) {
+  .intro-wrap {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .intro-ill img {
+    width: 60vw;
+    max-width: 320px;
+  }
+}
+
+#match-modal button {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #cfd8ff;
+  background: #f6f8ff;
+  cursor: pointer;
+}
+
+#match-modal strong {
+  color: #0f172a;
+}

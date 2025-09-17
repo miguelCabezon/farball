@@ -25,7 +25,7 @@ export const career = {
   teamName: "",
   crestId: "",
   squad: [],
-  coins: 12,
+  coins: 20,
   day: 1,
   league: null,
 };
@@ -117,7 +117,7 @@ function playerCardHTML(p, selected) {
       width:220px; border:2px solid ${
         selected ? "#2563eb" : "#ddd"
       }; border-radius:12px; 
-      padding:10px; cursor:pointer; background:#fff; ${sel}
+      padding:10px; cursor:pointer; ${sel}
     ">
       <div style="font-size:12px; opacity:.7; margin-bottom:4px;">${
         p.role
@@ -127,9 +127,7 @@ function playerCardHTML(p, selected) {
         p.blurb || "Jugador de barrio."
       }</div>
       <div style="display:flex; gap:6px; align-items:center; justify-content:space-between;">
-        <span style="font-size:12px; background:#eee; border-radius:999px; padding:2px 8px;">Tier ${
-          p.tier ?? "-"
-        }</span>
+        <span class="tier-chip">Tier ${p.tier ?? "-"}</span>
         <span style="font-weight:700;">${p.credits ?? 2}💰</span>
       </div>
     </div>
@@ -143,13 +141,13 @@ function renderIntro() {
       title: "El presi te pasa el testigo",
       body: "Chaval, un par de negocios me han salido regular y voy a pasar un tiempo en la sombra, te quedas a cargo del equipo",
       img: "assets/presi.png",
-      alt: "Presidente del club, traje arrugado y puro",
+      alt: "Presidente del club, traje arrugado y monóculo",
     },
     {
       title: "Tu objetivo",
-      body: "Liga a una vuelta. Ficha con cuatro perras, gana partidos y que no detengan a nadie. Fácil, ¿no?",
+      body: "Liga a una vuelta. Ficha con cuatro créditos, gana partidos y que no detengan a nadie. Fácil, ¿no?",
       img: "assets/presi.png",
-      alt: "Presi señalando el calendario",
+      alt: "Presi señalando al intercomunicador",
     },
     {
       title: "Cómo se juega",
