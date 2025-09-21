@@ -22,22 +22,23 @@ function stat(j, key, def = 10) {
 // Devuelve A (ataque), D (defensa) y GK (portero) en escala ~0..20.
 export function teamRating({ players }) {
   // Si faltan roles, hacemos medias razonables con lo que haya.
-  const gk = players.filter((j) => j.role === "GK");
-  const dfs = players.filter((j) => j.role === "DEF");
-  const mfs = players.filter((j) => j.role === "MID");
-  const atks = players.filter((j) => j.role === "ATK");
+
+  const gk = players?.filter((j) => j.role === "GK");
+  const dfs = players?.filter((j) => j.role === "DEF");
+  const mfs = players?.filter((j) => j.role === "MID");
+  const atks = players?.filter((j) => j.role === "ATK");
 
   // Portero: si no hay, inventamos uno modesto
-  const gkVal = gk.length ? stat(gk[0], "gk", 10) : 8;
+  const gkVal = gk?.length ? stat(gk[0], "gk", 10) : 8;
 
   // Defensa = DEFs + parte de MIDs
-  const defBase = avg(dfs.map((j) => stat(j, "def", 10)));
-  const midDef = avg(mfs.map((j) => stat(j, "def", 10)));
+  const defBase = avg(dfs?.map((j) => stat(j, "def", 10)));
+  const midDef = avg(mfs?.map((j) => stat(j, "def", 10)));
   const D = clamp(defBase * 0.7 + midDef * 0.3 || 9, 4, 20);
 
   // Ataque = ATKs + parte de MIDs
-  const atkBase = avg(atks.map((j) => stat(j, "atk", 10)));
-  const midAtk = avg(mfs.map((j) => stat(j, "atk", 10)));
+  const atkBase = avg(atks?.map((j) => stat(j, "atk", 10)));
+  const midAtk = avg(mfs?.map((j) => stat(j, "atk", 10)));
   const A = clamp(atkBase * 0.7 + midAtk * 0.3 || 9, 4, 20);
 
   return { A, D, GK: clamp(gkVal, 4, 20) };
@@ -45,7 +46,7 @@ export function teamRating({ players }) {
 
 function avg(arr) {
   if (!arr || !arr.length) return 0;
-  return arr.reduce((a, b) => a + b, 0) / arr.length;
+  return arr.reduce((a, b) => a + b, 0) / arr?.length;
 }
 
 // Potencia ~1.0 basada en A/D de la plantilla (para IA y simulación global)

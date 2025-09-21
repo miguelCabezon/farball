@@ -624,22 +624,20 @@ function renderClubSummary() {
     ${listRole("ATK", byRole.ATK)}
 
     <hr style="margin:16px 0;">
-    <h3>Clasificación (Jornada ${Math.max(0, career.league.day - 1)})</h3>
+    <h3>Clasificación (Jornada ${Math.max(0, career.day - 1)})</h3>
     <div id="tabla-clasificacion">${tableHTML()}</div>
 
     <div style="margin-top:12px; display:flex; gap:8px;">
-      <button id="btn-jugar-jornada">Jugar jornada ${
-        career.league.day
-      } ▶️</button>
+      <button id="btn-jugar-jornada">Jugar jornada ${career.day} ▶️</button>
       <button id="btn-rehacer">Rehacer draft 🔄</button>
     </div>
     <div id="jornada-list" style="margin-top:8px; font-size:13px; opacity:.8;"></div>
   `;
 
   // pinta la lista de la jornada actual (no duplicar)
-  const jornadaList = document.getElementById("jornada-list");
+  const dayList = document.getElementById("jornada-list");
   const matchesVista = getRoundMatchesByFixtures(career.league);
-  jornadaList.innerHTML =
+  dayList.innerHTML =
     `<strong>Jornada ${career.league.squad}:</strong><br>` +
     matchesVista.map((m) => `${m.home} vs ${m.away}`).join("<br>");
 
@@ -664,16 +662,16 @@ function renderClubSummary() {
     };
   }
 
-  const btnJugar = root.querySelector("#btn-jugar-jornada");
-  if (!btnJugar) return;
+  const playBtn = root.querySelector("#btn-jugar-jornada");
+  if (!playBtn) return;
 
   // Deshabilita si ya terminó (por si recarga página)
   if (career.league.squad > career.league.totalJornadas) {
-    btnJugar.textContent = "Liga finalizada ✔️";
-    btnJugar.disabled = true;
+    playBtn.textContent = "Liga finalizada ✔️";
+    playBtn.disabled = true;
   }
 
-  btnJugar.onclick = () => {
+  playBtn.onclick = () => {
     const matches = getRoundMatchesByFixtures(career.league);
     const my = matches.find(
       (m) => m.home === career.teamName || m.away === career.teamName
@@ -727,14 +725,14 @@ function renderClubSummary() {
     // refrescar lista jornada siguiente
     if (career.league.squad <= career.league.totalJornadas) {
       const nextMatches = getRoundMatchesByFixtures(career.league);
-      jornadaList.innerHTML =
+      dayList.innerHTML =
         `<strong>Jornada ${career.league.squad}:</strong><br>` +
         nextMatches.map((m) => `${m.home} vs ${m.away}`).join("<br>");
-      btnJugar.textContent = `Jugar jornada ${career.league.squad} ▶️`;
+      playBtn.textContent = `Jugar jornada ${career.league.squad} ▶️`;
     } else {
-      jornadaList.innerHTML = `<strong>¡Liga finalizada!</strong>`;
-      btnJugar.textContent = "Liga finalizada ✔️";
-      btnJugar.disabled = true;
+      dayList.innerHTML = `<strong>¡Liga finalizada!</strong>`;
+      playBtn.textContent = "Liga finalizada ✔️";
+      playBtn.disabled = true;
     }
   };
 
@@ -760,7 +758,7 @@ function showMatchLogModal(home, away, res) {
   }
   const score = `${res.score.home} - ${res.score.away}`;
   const html = `
-    <div style="background:#fff; width:min(720px,90vw); max-height:80vh; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.2); display:flex; flex-direction:column;">
+    <div style="background:#0a0f1c; width:min(720px,90vw); max-height:80vh; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.2); display:flex; flex-direction:column;">
       <div style="padding:12px 16px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:12px;">
         <strong>${home}</strong> <span>vs</span> <strong>${away}</strong>
         <span style="margin-left:auto; font-weight:700;">${score}</span>
